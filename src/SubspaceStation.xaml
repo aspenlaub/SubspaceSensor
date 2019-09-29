@@ -1,0 +1,212 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Window
+	x:Class="Aspenlaub.Net.GitHub.CSharp.SubspaceSensor.SubspaceStation" 
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" 
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" 
+    xmlns:subspace="clr-namespace:Aspenlaub.Net.GitHub.CSharp.SubspaceSensor"
+	Title="SubspaceSensor"
+	Width="720"
+	Height="480">
+	<Window.Resources>
+		<Style
+			x:Key="FontStyle">
+			<Setter
+				Property="Control.FontFamily"
+				Value="Verdana" />
+			<Setter
+				Property="Control.FontSize"
+				Value="12" />
+		</Style>
+		<Style
+			x:Key="GoldenStyle"
+			BasedOn="{StaticResource FontStyle}">
+			<Setter
+				Property="Control.Foreground"
+				Value="Gold" />
+		</Style>
+		<Style
+			x:Key="InputStyle"
+			BasedOn="{StaticResource FontStyle}">
+			<Setter
+				Property="Control.Foreground"
+				Value="#400040" />
+			<Setter
+				Property="Control.BorderBrush"
+				Value="Gold" />
+		</Style>
+		<Style
+			TargetType="Label"
+			BasedOn="{StaticResource GoldenStyle}" />
+		<Style
+			TargetType="TextBlock"
+			BasedOn="{StaticResource GoldenStyle}" />
+		<Style
+			TargetType="{x:Type subspace:SubspaceFolderBrowser}"
+			BasedOn="{StaticResource GoldenStyle}" />
+		<Style
+			TargetType="TextBox"
+			BasedOn="{StaticResource InputStyle}" />
+		<Style
+			TargetType="ListBox"
+			BasedOn="{StaticResource InputStyle}" />
+	</Window.Resources>
+	<Grid
+		Margin="8">
+		<Grid.ColumnDefinitions>
+			<ColumnDefinition
+				Width="38*" />
+			<ColumnDefinition
+				Width="62*" />
+		</Grid.ColumnDefinitions>
+		<Grid
+			Grid.Column="0">
+			<Grid.RowDefinitions>
+				<RowDefinition
+					Height="Auto" />
+				<RowDefinition
+					Height="Auto" />
+				<RowDefinition
+					Height="Auto" />
+				<RowDefinition
+					Height="Auto" />
+			</Grid.RowDefinitions>
+			<subspace:SubspaceFolderBrowser
+				x:Name="PortBrowser"
+				SubFolder="Port"
+				Grid.Row="0"></subspace:SubspaceFolderBrowser>
+			<subspace:SubspaceFolderBrowser
+				x:Name="ErrorBrowser"
+				SubFolder="Error"
+				Grid.Row="1"></subspace:SubspaceFolderBrowser>
+			<subspace:SubspaceFolderBrowser
+				x:Name="InboxBrowser"
+				SubFolder="Inbox"
+				Grid.Row="2"></subspace:SubspaceFolderBrowser>
+		</Grid>
+		<Grid
+			Grid.Column="1"
+			Margin="8,0,0,0">
+			<Grid.RowDefinitions>
+				<RowDefinition
+					Height="Auto" />
+				<RowDefinition
+					Height="Auto" />
+				<RowDefinition
+					Height="Auto" />
+				<RowDefinition
+					Height="Auto" />
+				<RowDefinition
+					Height="Auto" />
+				<RowDefinition
+					Height="Auto" />
+				<RowDefinition
+					Height="*" />
+			</Grid.RowDefinitions>
+			<Grid.ColumnDefinitions>
+				<ColumnDefinition
+					Width="Auto" />
+				<ColumnDefinition
+					Width="*" />
+			</Grid.ColumnDefinitions>
+			<WrapPanel
+				Grid.Row="0"
+				Grid.Column="1"
+				Orientation="Horizontal"
+				Margin="0,0,0,8">
+				<Button
+					x:Name="ButtonDeleteAll"
+					Margin="0,0,8,0"
+					Padding="4"
+					Click="OnDeleteAllClick">Delete _All</Button>
+				<Button
+					x:Name="ButtonDelete"
+					Margin="0,0,8,0"
+					Padding="4"
+					Click="OnDeleteClick">_Delete</Button>
+				<Button
+					x:Name="ButtonUpdatePort"
+					Margin="0,0,8,0"
+					Padding="4"
+					Click="OnUpdatePortClick">_Check Mails</Button>
+				<TextBlock
+					x:Name="TextCreated"
+					Margin="0,0,8,0"
+					Padding="4" />
+			</WrapPanel>
+			<Label
+				Grid.Row="1"
+				Grid.Column="0"
+				Margin="0,0,8,8">From</Label>
+			<TextBox
+				x:Name="TextFrom"
+				Grid.Row="1"
+				Grid.Column="1"
+				Margin="0,0,0,8"
+				IsReadOnly="True" />
+			<Label
+				Grid.Row="2"
+				Grid.Column="0"
+				Margin="0,0,8,8">To</Label>
+			<TextBox
+				x:Name="TextTo"
+				Grid.Row="2"
+				Grid.Column="1"
+				Margin="0,0,0,8"
+				IsReadOnly="True" />
+			<Label
+				Grid.Row="3"
+				Grid.Column="0"
+				Margin="0,0,8,8">CC</Label>
+			<TextBox
+				x:Name="TextCc"
+				Grid.Row="3"
+				Grid.Column="1"
+				Margin="0,0,0,8"
+				IsReadOnly="True" />
+			<Label
+				Grid.Row="4"
+				Grid.Column="0"
+				Margin="0,0,8,8">BCC</Label>
+			<TextBox
+				x:Name="TextBcc"
+				Grid.Row="4"
+				Grid.Column="1"
+				Margin="0,0,0,8"
+				IsReadOnly="True" />
+			<Label
+				Grid.Row="5"
+				Grid.Column="0"
+				Margin="0,0,8,8">Header</Label>
+			<TextBox
+				x:Name="TextHeader"
+				Grid.Row="5"
+				Grid.Column="1"
+				Margin="0,0,0,8"
+				IsReadOnly="True" />
+			<RichTextBox
+				x:Name="TextMessage"
+				Grid.Row="6"
+				Grid.Column="0"
+				Grid.ColumnSpan="2"
+				Margin="0,0,0,8"
+				IsReadOnly="True"
+				IsDocumentEnabled="True" 
+				VerticalScrollBarVisibility="Auto"/>
+		</Grid>
+	</Grid>
+	<Window.Background>
+		<LinearGradientBrush>
+			<LinearGradientBrush.GradientStops>
+				<GradientStop
+					Offset="0.00"
+					Color="#400040" />
+				<GradientStop
+					Offset="0.50"
+					Color="#400020" />
+				<GradientStop
+					Offset="1.00"
+					Color="#800000" />
+			</LinearGradientBrush.GradientStops>
+		</LinearGradientBrush>
+	</Window.Background>
+</Window>

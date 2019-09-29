@@ -1,0 +1,47 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>netcoreapp3.0</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <AssemblyName>Aspenlaub.Net.GitHub.CSharp.SubspaceSensor</AssemblyName>
+    <RootNamespace>Aspenlaub.Net.GitHub.CSharp.SubspaceSensor</RootNamespace>
+    <StartupObject>Aspenlaub.Net.GitHub.CSharp.SubspaceSensor.SubspaceStationApp</StartupObject>
+    <GenerateBuildInfoConfigFile>false</GenerateBuildInfoConfigFile>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <Deterministic>false</Deterministic>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
+    <NuspecFile>SubspaceSensor.nuspec</NuspecFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Remove="Test\**" />
+    <EmbeddedResource Remove="Test\**" />
+    <None Remove="Test\**" />
+    <Page Remove="Test\**" />
+  </ItemGroup>
+  <ItemGroup>
+    <Page Remove="SubspaceStationApp.xaml" />
+  </ItemGroup>
+  <ItemGroup>
+    <ApplicationDefinition Include="SubspaceStationApp.xaml" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Aspenlaub.Net.GitHub.CSharp.Pegh" Version="1.0.7205.32135" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Update="Properties\Resources.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Update="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+  </ItemGroup>
+</Project>

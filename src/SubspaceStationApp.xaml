@@ -1,0 +1,8 @@
+﻿<Application x:Class="Aspenlaub.Net.GitHub.CSharp.SubspaceSensor.SubspaceStationApp"
+	xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+	xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+	StartupUri="SubspaceStation.xaml">
+	<Application.Resources>
+		 
+	</Application.Resources>
+</Application>
