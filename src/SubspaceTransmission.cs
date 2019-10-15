@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Xml;
+using Aspenlaub.Net.GitHub.CSharp.Pegh.Interfaces;
 
 namespace Aspenlaub.Net.GitHub.CSharp.SubspaceSensor {
     public class SubspaceTransmission : IComparable {
@@ -66,9 +67,12 @@ namespace Aspenlaub.Net.GitHub.CSharp.SubspaceSensor {
             }
         }
 
-        public SubspaceTransmission() {
+        private readonly IFolderResolver vFolderResolver;
+
+        public SubspaceTransmission(IFolderResolver folderResolver) {
             vMessageId = "";
             vFolder = SubspaceFolders.None;
+            vFolderResolver = folderResolver;
             Invalidate();
         }
 
@@ -92,7 +96,7 @@ namespace Aspenlaub.Net.GitHub.CSharp.SubspaceSensor {
 
         public string FileName => "subspacemsg" + vMessageId + ".xml";
 
-        public string FullFileName => SubspaceFolder.FolderPath(vFolder) + FileName;
+        public string FullFileName => new SubspaceFolder(vFolderResolver).FolderPath(vFolder) + FileName;
 
         private void TryReading() {
             if (vMessageId.Length == 0 || vFolder == SubspaceFolders.None) {

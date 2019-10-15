@@ -3,16 +3,26 @@ using System.Windows;
 using System.Windows.Input;
 using System.Collections.Generic;
 using System.Windows.Threading;
+using Aspenlaub.Net.GitHub.CSharp.Pegh.Components;
+using Aspenlaub.Net.GitHub.CSharp.Pegh.Interfaces;
+using Autofac;
 
 namespace Aspenlaub.Net.GitHub.CSharp.SubspaceSensor {
     public partial class SubspaceStationApp {
         private List<SubspaceAppCmd> vCommands;
         private int vRotator;
 
+        private readonly IContainer vContainer;
+
+        public SubspaceStationApp() {
+            vContainer = new ContainerBuilder().UsePegh(new DummyCsArgumentPrompter()).Build();
+        }
+
         protected override void OnStartup(StartupEventArgs e) {
             base.OnStartup(e);
             vCommands = new List<SubspaceAppCmd> {
-                new SubspaceAppCmd {CmdType = SubspaceAppCmdType.Initialise}, new SubspaceAppCmd {CmdType = SubspaceAppCmdType.Scan}
+                new SubspaceAppCmd(vContainer.Resolve<IFolderResolver>()) { CmdType = SubspaceAppCmdType.Initialise },
+                new SubspaceAppCmd(vContainer.Resolve<IFolderResolver>()) { CmdType = SubspaceAppCmdType.Scan }
             };
 
             if (Current.Dispatcher == null) {
@@ -48,8 +58,8 @@ namespace Aspenlaub.Net.GitHub.CSharp.SubspaceSensor {
                     return;
                 }
 
-                vCommands.Add(new SubspaceAppCmd { CmdType = SubspaceAppCmdType.Initialise });
-                vCommands.Add(new SubspaceAppCmd { CmdType = SubspaceAppCmdType.Scan });
+                vCommands.Add(new SubspaceAppCmd(vContainer.Resolve<IFolderResolver>()) { CmdType = SubspaceAppCmdType.Initialise });
+                vCommands.Add(new SubspaceAppCmd(vContainer.Resolve<IFolderResolver>()) { CmdType = SubspaceAppCmdType.Scan });
                 return;
             }
 

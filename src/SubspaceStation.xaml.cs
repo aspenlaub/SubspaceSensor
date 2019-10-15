@@ -4,16 +4,22 @@ using System.Windows;
 using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Navigation;
+using Aspenlaub.Net.GitHub.CSharp.Pegh.Components;
+using Aspenlaub.Net.GitHub.CSharp.Pegh.Interfaces;
+using Autofac;
 
 namespace Aspenlaub.Net.GitHub.CSharp.SubspaceSensor {
     public partial class SubspaceStation {
         private SubspaceFolders vFolder;
         private string vMessageId;
 
+        private readonly IContainer vContainer;
+
         public SubspaceStation() {
             InitializeComponent();
             vFolder = SubspaceFolders.None;
             vMessageId = "";
+            vContainer = new ContainerBuilder().UsePegh(new DummyCsArgumentPrompter()).Build();
         }
 
         public SubspaceFolderBrowser FolderBrowser(SubspaceFolders folder) {
@@ -106,19 +112,19 @@ namespace Aspenlaub.Net.GitHub.CSharp.SubspaceSensor {
         }
 
         private void OnDeleteClick(object sender, RoutedEventArgs e) {
-            var applicationCommand = new SubspaceAppCmd { CmdType = SubspaceAppCmdType.Delete, Folder = vFolder, MessageId = vMessageId };
+            var applicationCommand = new SubspaceAppCmd(vContainer.Resolve<IFolderResolver>()) { CmdType = SubspaceAppCmdType.Delete, Folder = vFolder, MessageId = vMessageId };
             ((SubspaceStationApp)Application.Current).AddCommand(applicationCommand);
         }
 
         private void OnDeleteAllClick(object sender, RoutedEventArgs e) {
-            var applicationCommand = new SubspaceAppCmd { CmdType = SubspaceAppCmdType.DeleteAll };
+            var applicationCommand = new SubspaceAppCmd(vContainer.Resolve<IFolderResolver>()) { CmdType = SubspaceAppCmdType.DeleteAll };
             ((SubspaceStationApp)Application.Current).AddCommand(applicationCommand);
         }
 
         private void OnUpdatePortClick(object sender, RoutedEventArgs e) {
-            var applicationCommand = new SubspaceAppCmd { CmdType = SubspaceAppCmdType.Initialise };
+            var applicationCommand = new SubspaceAppCmd(vContainer.Resolve<IFolderResolver>()) { CmdType = SubspaceAppCmdType.Initialise };
             ((SubspaceStationApp)Application.Current).AddCommand(applicationCommand);
-            applicationCommand = new SubspaceAppCmd { CmdType = SubspaceAppCmdType.Scan };
+            applicationCommand = new SubspaceAppCmd(vContainer.Resolve<IFolderResolver>()) { CmdType = SubspaceAppCmdType.Scan };
             ((SubspaceStationApp)Application.Current).AddCommand(applicationCommand);
         }
     }

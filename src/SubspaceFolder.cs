@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using Aspenlaub.Net.GitHub.CSharp.Pegh.Components;
 using Aspenlaub.Net.GitHub.CSharp.Pegh.Entities;
 using Aspenlaub.Net.GitHub.CSharp.Pegh.Extensions;
 using Aspenlaub.Net.GitHub.CSharp.Pegh.Interfaces;
@@ -11,12 +10,16 @@ namespace Aspenlaub.Net.GitHub.CSharp.SubspaceSensor {
         None, Port, Error, Inbox,
     }
 
-    public abstract class SubspaceFolder {
-        public static IFolder ConfiguredSubspaceFolder() {
-            var componentProvider = new ComponentProvider();
-            var resolver = componentProvider.FolderResolver;
+    public class SubspaceFolder {
+        private readonly IFolderResolver vFolderResolver;
+
+        public SubspaceFolder(IFolderResolver folderResolver) {
+            vFolderResolver = folderResolver;
+        }
+
+        public IFolder ConfiguredSubspaceFolder() {
             var errorsAndInfos = new ErrorsAndInfos();
-            var subspaceFolder = resolver.Resolve(@"$(MainUserFolder)\Documents\Subspace", errorsAndInfos);
+            var subspaceFolder = vFolderResolver.Resolve(@"$(MainUserFolder)\Documents\Subspace", errorsAndInfos);
             if (errorsAndInfos.AnyErrors()) {
                 throw new Exception(errorsAndInfos.ErrorsToString());
             }
@@ -28,7 +31,7 @@ namespace Aspenlaub.Net.GitHub.CSharp.SubspaceSensor {
             return subspaceFolder;
         }
 
-        public static string FolderPath(SubspaceFolders folder) {
+        public string FolderPath(SubspaceFolders folder) {
             var path = ConfiguredSubspaceFolder().FullName + '\\';
             switch(folder) {
                 case SubspaceFolders.Port : return path + @"07_Port\";
@@ -38,7 +41,7 @@ namespace Aspenlaub.Net.GitHub.CSharp.SubspaceSensor {
             }
         }
 
-        public static List<SubspaceTransmission> ScanFolder(SubspaceFolders folder) {
+        public List<SubspaceTransmission> ScanFolder(SubspaceFolders folder) {
             var path = FolderPath(folder);
             var dirInfo = new DirectoryInfo(path);
             var transmissions = new List<SubspaceTransmission>();
@@ -46,7 +49,7 @@ namespace Aspenlaub.Net.GitHub.CSharp.SubspaceSensor {
             foreach(var fileInfo in dirInfo.GetFiles("subspacemsg*.xml")) {
                 var s = fileInfo.Name;
                 transmissions.Add(
-                    new SubspaceTransmission {
+                    new SubspaceTransmission(vFolderResolver) {
                         MessageId = s.Substring(11, s.Length - 15),
                         Folder = folder,
                         Created = fileInfo.CreationTime});

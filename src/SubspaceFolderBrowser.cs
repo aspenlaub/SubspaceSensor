@@ -2,6 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
+using Aspenlaub.Net.GitHub.CSharp.Pegh.Components;
+using Aspenlaub.Net.GitHub.CSharp.Pegh.Interfaces;
+using Autofac;
 
 namespace Aspenlaub.Net.GitHub.CSharp.SubspaceSensor {
     public class SubspaceFolderBrowser : Expander {
@@ -21,10 +24,12 @@ namespace Aspenlaub.Net.GitHub.CSharp.SubspaceSensor {
         private readonly ListBox vListBox;
         private readonly List<SubspaceTransmission> vTransmissions;
 
+        private readonly IFolderResolver vFolderResolver = new ContainerBuilder().UsePegh(new DummyCsArgumentPrompter()).Build().Resolve<IFolderResolver>();
+
         public bool IsEmpty => vTransmissions.Count == 0;
 
         private void DefaultTransmission() {
-            vTransmissions.Add(new SubspaceTransmission { MessageId = "(no messages)" });
+            vTransmissions.Add(new SubspaceTransmission(vFolderResolver) { MessageId = "(no messages)" });
         }
 
         public SubspaceFolderBrowser() {
@@ -134,7 +139,7 @@ namespace Aspenlaub.Net.GitHub.CSharp.SubspaceSensor {
                 return;
             }
 
-            var cmd = new SubspaceAppCmd { CmdType = SubspaceAppCmdType.MessageSelected, Folder = selected.Folder, MessageId = selected.MessageId };
+            var cmd = new SubspaceAppCmd(vFolderResolver) { CmdType = SubspaceAppCmdType.MessageSelected, Folder = selected.Folder, MessageId = selected.MessageId };
             ((SubspaceStationApp)Application.Current).AddCommand(cmd);
         }
 
@@ -169,16 +174,16 @@ namespace Aspenlaub.Net.GitHub.CSharp.SubspaceSensor {
             var selected = vListBox.SelectedIndex == i;
             if (selected) {
                 if (i + 1 < vTransmissions.Count) {
-                    followCommands.Add(new SubspaceAppCmd { CmdType = SubspaceAppCmdType.MessageSelected, Folder = vTransmissions[i + 1].Folder, MessageId = vTransmissions[i + 1].MessageId });
+                    followCommands.Add(new SubspaceAppCmd(vFolderResolver) { CmdType = SubspaceAppCmdType.MessageSelected, Folder = vTransmissions[i + 1].Folder, MessageId = vTransmissions[i + 1].MessageId });
                 } else if (i > 0) {
-                    followCommands.Add(new SubspaceAppCmd { CmdType = SubspaceAppCmdType.MessageSelected, Folder = vTransmissions[i - 1].Folder, MessageId = vTransmissions[i - 1].MessageId });
+                    followCommands.Add(new SubspaceAppCmd(vFolderResolver) { CmdType = SubspaceAppCmdType.MessageSelected, Folder = vTransmissions[i - 1].Folder, MessageId = vTransmissions[i - 1].MessageId });
                 }
             }
             vTransmissions.RemoveAt(i);
             if (vTransmissions.Count == 0) {
                 DefaultTransmission();
                 if (selected) {
-                    followCommands.Add(new SubspaceAppCmd { CmdType = SubspaceAppCmdType.MessageSelected, Folder = vFolder });
+                    followCommands.Add(new SubspaceAppCmd(vFolderResolver) { CmdType = SubspaceAppCmdType.MessageSelected, Folder = vFolder });
                 }
             }
             vListBox.ItemsSource = null;
@@ -200,7 +205,7 @@ namespace Aspenlaub.Net.GitHub.CSharp.SubspaceSensor {
                 vTransmissions.RemoveAt(0);
             }
 
-            vTransmissions.Add(new SubspaceTransmission { Folder = vFolder, MessageId = messageId });
+            vTransmissions.Add(new SubspaceTransmission(vFolderResolver) { Folder = vFolder, MessageId = messageId });
             vTransmissions.Sort();
             vListBox.ItemsSource = null;
             vListBox.ItemsSource = vTransmissions;

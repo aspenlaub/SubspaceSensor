@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Aspenlaub.Net.GitHub.CSharp.Pegh.Interfaces;
 
 namespace Aspenlaub.Net.GitHub.CSharp.SubspaceSensor {
     public enum SubspaceAppCmdType {
@@ -102,24 +103,27 @@ namespace Aspenlaub.Net.GitHub.CSharp.SubspaceSensor {
 
         public SubspaceFolders ToFolder { get; private set; }
 
-        public SubspaceAppCmd() {
+        private readonly IFolderResolver vFolderResolver;
+
+        public SubspaceAppCmd(IFolderResolver folderResolver) {
             vCmdType = SubspaceAppCmdType.None;
             vFolder = SubspaceFolders.None;
             ToFolder = SubspaceFolders.None;
             vMessageId = "";
+            vFolderResolver = folderResolver;
         }
 
         private void Initialise(SubspaceStation station) {
             foreach (var folder in Enum.GetValues(typeof(SubspaceFolders)).Cast<SubspaceFolders>().Where(folder => folder != SubspaceFolders.None)) {
                 var folderBrowser = station.FolderBrowser(folder);
-                folderBrowser.Initialise(SubspaceFolder.ScanFolder(folder));
+                folderBrowser.Initialise(new SubspaceFolder(vFolderResolver).ScanFolder(folder));
             }
         }
 
         private void Scan(SubspaceStation station, List<SubspaceAppCmd> followCommands) {
             var folderBrowser = station.FolderBrowser(vFolder);
             if (folderBrowser.IsEmpty) {
-                folderBrowser.Initialise(SubspaceFolder.ScanFolder(vFolder));
+                folderBrowser.Initialise(new SubspaceFolder(vFolderResolver).ScanFolder(vFolder));
             }
             if (folderBrowser.IsEmpty) {
                 return;
@@ -131,12 +135,12 @@ namespace Aspenlaub.Net.GitHub.CSharp.SubspaceSensor {
             }
 
             var newFolder = transmission.Valid ? SubspaceFolders.Inbox : SubspaceFolders.Error;
-            File.Move(transmission.FullFileName, SubspaceFolder.FolderPath(newFolder) + transmission.FileName);
-            followCommands.Add(new SubspaceAppCmd { CmdType = SubspaceAppCmdType.Scanned, MessageId = transmission.MessageId });
+            File.Move(transmission.FullFileName, new SubspaceFolder(vFolderResolver).FolderPath(newFolder) + transmission.FileName);
+            followCommands.Add(new SubspaceAppCmd(vFolderResolver) { CmdType = SubspaceAppCmdType.Scanned, MessageId = transmission.MessageId });
             followCommands.Add(transmission.Valid
-                ? new SubspaceAppCmd {CmdType = SubspaceAppCmdType.Received, MessageId = transmission.MessageId}
-                : new SubspaceAppCmd {CmdType = SubspaceAppCmdType.ReceivedError, MessageId = transmission.MessageId});
-            followCommands.Add(new SubspaceAppCmd { CmdType = SubspaceAppCmdType.Scan });
+                ? new SubspaceAppCmd(vFolderResolver) { CmdType = SubspaceAppCmdType.Received, MessageId = transmission.MessageId}
+                : new SubspaceAppCmd(vFolderResolver) { CmdType = SubspaceAppCmdType.ReceivedError, MessageId = transmission.MessageId});
+            followCommands.Add(new SubspaceAppCmd(vFolderResolver) { CmdType = SubspaceAppCmdType.Scan });
         }
 
         private void Scanned(SubspaceStation station, List<SubspaceAppCmd> followCommands) {
@@ -157,7 +161,7 @@ namespace Aspenlaub.Net.GitHub.CSharp.SubspaceSensor {
                 return;
             }
 
-            var transmission = new SubspaceTransmission { Folder = vFolder, MessageId = vMessageId };
+            var transmission = new SubspaceTransmission(vFolderResolver) { Folder = vFolder, MessageId = vMessageId };
             if (transmission.IsPseudo) {
                 return;
             }
@@ -180,7 +184,7 @@ namespace Aspenlaub.Net.GitHub.CSharp.SubspaceSensor {
         }
 
         private void MessageSelected(SubspaceStation station) {
-            var transmission = new SubspaceTransmission { Folder = vFolder, MessageId = vMessageId };
+            var transmission = new SubspaceTransmission(vFolderResolver) { Folder = vFolder, MessageId = vMessageId };
             station.SetTransmission(transmission);
         }
 
