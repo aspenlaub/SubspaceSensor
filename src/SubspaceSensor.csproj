@@ -46,6 +46,6 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Aspenlaub.Net.GitHub.CSharp.Pegh" Version="2.0.90.1141" />
+    <PackageReference Include="Aspenlaub.Net.GitHub.CSharp.Pegh" Version="2.0.94.880" />
   </ItemGroup>
 </Project>
