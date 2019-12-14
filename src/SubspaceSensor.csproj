@@ -18,6 +18,7 @@
     <RepositoryType>git</RepositoryType>
     <RepositoryUrl>https://github.com/aspenlaub/SubspaceSensor.git</RepositoryUrl>
     <RepositoryBranch>master</RepositoryBranch>
+    <PackageId>SubspaceSensor</PackageId>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
