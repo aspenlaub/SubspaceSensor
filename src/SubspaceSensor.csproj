@@ -37,6 +37,9 @@
     <ApplicationDefinition Include="SubspaceStationApp.xaml" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="Pegh" Version="2.0.145.993" />
+  </ItemGroup>
+  <ItemGroup>
     <Compile Update="Properties\Resources.Designer.cs">
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
@@ -48,8 +51,5 @@
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
-  </ItemGroup>
-  <ItemGroup>
-    <PackageReference Include="Aspenlaub.Net.GitHub.CSharp.Pegh" Version="2.0.94.880" />
   </ItemGroup>
 </Project>
