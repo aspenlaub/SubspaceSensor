@@ -2,6 +2,7 @@ using System;
 using System.Windows;
 using System.Windows.Input;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using System.Windows.Threading;
 using Aspenlaub.Net.GitHub.CSharp.Pegh.Components;
 using Aspenlaub.Net.GitHub.CSharp.Pegh.Interfaces;
@@ -21,15 +22,15 @@ namespace Aspenlaub.Net.GitHub.CSharp.SubspaceSensor {
         protected override void OnStartup(StartupEventArgs e) {
             base.OnStartup(e);
             vCommands = new List<SubspaceAppCmd> {
-                new SubspaceAppCmd(vContainer.Resolve<IFolderResolver>()) { CmdType = SubspaceAppCmdType.Initialise },
-                new SubspaceAppCmd(vContainer.Resolve<IFolderResolver>()) { CmdType = SubspaceAppCmdType.Scan }
+                new(vContainer.Resolve<IFolderResolver>()) { CmdType = SubspaceAppCmdType.Initialise },
+                new(vContainer.Resolve<IFolderResolver>()) { CmdType = SubspaceAppCmdType.Scan }
             };
 
             if (Current.Dispatcher == null) {
                 throw new NullReferenceException(nameof(Current.Dispatcher));
             }
 
-            var idleTimer = new DispatcherTimer(TimeSpan.FromSeconds(.5), DispatcherPriority.ApplicationIdle, SubspaceIdleCallback, Current.Dispatcher);
+            var idleTimer = new DispatcherTimer(TimeSpan.FromSeconds(.5), DispatcherPriority.ApplicationIdle, SubspaceIdleCallbackAsync, Current.Dispatcher);
             idleTimer.Start();
         }
 
@@ -46,7 +47,7 @@ namespace Aspenlaub.Net.GitHub.CSharp.SubspaceSensor {
             vCommands.Add(cmd);
         }
 
-        private void SubspaceIdleCallback(object sender, EventArgs e) {
+        private async void SubspaceIdleCallbackAsync(object sender, EventArgs e) {
             if (Current.MainWindow == null) {
                 throw new NullReferenceException(nameof(Current.MainWindow));
             }
@@ -69,7 +70,8 @@ namespace Aspenlaub.Net.GitHub.CSharp.SubspaceSensor {
                 var applicationCommand = vCommands[0];
                 vCommands.RemoveAt(0);
                 var station = (SubspaceStation)Current.MainWindow;
-                applicationCommand.Execute(station, out var followCommands);
+                var followCommands = new List<SubspaceAppCmd>();
+                await applicationCommand.ExecuteAsync(station, followCommands);
                 foreach(var followCmd in followCommands) {
                     AddCommand(followCmd);
                 }

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading.Tasks;
 using Aspenlaub.Net.GitHub.CSharp.Pegh.Entities;
 using Aspenlaub.Net.GitHub.CSharp.Pegh.Extensions;
 using Aspenlaub.Net.GitHub.CSharp.Pegh.Interfaces;
@@ -17,9 +18,9 @@ namespace Aspenlaub.Net.GitHub.CSharp.SubspaceSensor {
             vFolderResolver = folderResolver;
         }
 
-        public IFolder ConfiguredSubspaceFolder() {
+        public async Task<IFolder> ConfiguredSubspaceFolderAsync() {
             var errorsAndInfos = new ErrorsAndInfos();
-            var subspaceFolder = vFolderResolver.Resolve(@"$(MainUserFolder)\Documents\Subspace", errorsAndInfos);
+            var subspaceFolder = await vFolderResolver.ResolveAsync(@"$(MainUserFolder)\Documents\Subspace", errorsAndInfos);
             if (errorsAndInfos.AnyErrors()) {
                 throw new Exception(errorsAndInfos.ErrorsToString());
             }
@@ -31,8 +32,8 @@ namespace Aspenlaub.Net.GitHub.CSharp.SubspaceSensor {
             return subspaceFolder;
         }
 
-        public string FolderPath(SubspaceFolders folder) {
-            var path = ConfiguredSubspaceFolder().FullName + '\\';
+        public async Task<string> FolderPathAsync(SubspaceFolders folder) {
+            var path = (await ConfiguredSubspaceFolderAsync()).FullName + '\\';
             switch(folder) {
                 case SubspaceFolders.Port : return path + @"07_Port\";
                 case SubspaceFolders.Error : return path + @"19_Error\";
@@ -41,8 +42,8 @@ namespace Aspenlaub.Net.GitHub.CSharp.SubspaceSensor {
             }
         }
 
-        public List<SubspaceTransmission> ScanFolder(SubspaceFolders folder) {
-            var path = FolderPath(folder);
+        public async Task<List<SubspaceTransmission>> ScanFolderAsync(SubspaceFolders folder) {
+            var path = await FolderPathAsync(folder);
             var dirInfo = new DirectoryInfo(path);
             var transmissions = new List<SubspaceTransmission>();
             // ReSharper disable once LoopCanBeConvertedToQuery

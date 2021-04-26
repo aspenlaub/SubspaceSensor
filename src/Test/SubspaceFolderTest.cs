@@ -1,4 +1,5 @@
 using System.IO;
+using System.Threading.Tasks;
 using Aspenlaub.Net.GitHub.CSharp.Pegh.Components;
 using Aspenlaub.Net.GitHub.CSharp.Pegh.Interfaces;
 using Autofac;
@@ -14,14 +15,14 @@ namespace Aspenlaub.Net.GitHub.CSharp.SubspaceSensor.Test {
         }
 
         [TestMethod]
-        public void CanWorkWithSubspaceFolder() {
+        public async Task CanWorkWithSubspaceFolder() {
             foreach(var subspaceFolder in new[] { SubspaceFolders.Error, SubspaceFolders.Inbox, SubspaceFolders.Port }) {
-                VerifyThatSubspaceFolderExists(subspaceFolder);
+                await VerifyThatSubspaceFolderExistsAsync(subspaceFolder);
             }
         }
 
-        private void VerifyThatSubspaceFolderExists(SubspaceFolders subspaceFolder) {
-            var folder = new SubspaceFolder(vContainer.Resolve<IFolderResolver>()).FolderPath(subspaceFolder);
+        private async Task VerifyThatSubspaceFolderExistsAsync(SubspaceFolders subspaceFolder) {
+            var folder = await new SubspaceFolder(vContainer.Resolve<IFolderResolver>()).FolderPathAsync(subspaceFolder);
             Assert.IsTrue(Directory.Exists(folder));
         }
     }

@@ -96,7 +96,7 @@ namespace Aspenlaub.Net.GitHub.CSharp.SubspaceSensor {
 
         public string FileName => "subspacemsg" + vMessageId + ".xml";
 
-        public string FullFileName => new SubspaceFolder(vFolderResolver).FolderPath(vFolder) + FileName;
+        public string FullFileName => new SubspaceFolder(vFolderResolver).FolderPathAsync(vFolder).Result + FileName;
 
         private void TryReading() {
             if (vMessageId.Length == 0 || vFolder == SubspaceFolders.None) {

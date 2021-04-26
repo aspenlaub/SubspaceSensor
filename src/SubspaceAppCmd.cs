@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using Aspenlaub.Net.GitHub.CSharp.Pegh.Interfaces;
 
 namespace Aspenlaub.Net.GitHub.CSharp.SubspaceSensor {
@@ -113,17 +114,17 @@ namespace Aspenlaub.Net.GitHub.CSharp.SubspaceSensor {
             vFolderResolver = folderResolver;
         }
 
-        private void Initialise(SubspaceStation station) {
+        private async Task InitialiseAsync(SubspaceStation station) {
             foreach (var folder in Enum.GetValues(typeof(SubspaceFolders)).Cast<SubspaceFolders>().Where(folder => folder != SubspaceFolders.None)) {
                 var folderBrowser = station.FolderBrowser(folder);
-                folderBrowser.Initialise(new SubspaceFolder(vFolderResolver).ScanFolder(folder));
+                folderBrowser.Initialise(await new SubspaceFolder(vFolderResolver).ScanFolderAsync(folder));
             }
         }
 
-        private void Scan(SubspaceStation station, List<SubspaceAppCmd> followCommands) {
+        private async Task ScanAsync(SubspaceStation station, List<SubspaceAppCmd> followCommands) {
             var folderBrowser = station.FolderBrowser(vFolder);
             if (folderBrowser.IsEmpty) {
-                folderBrowser.Initialise(new SubspaceFolder(vFolderResolver).ScanFolder(vFolder));
+                folderBrowser.Initialise(await new SubspaceFolder(vFolderResolver).ScanFolderAsync(vFolder));
             }
             if (folderBrowser.IsEmpty) {
                 return;
@@ -135,7 +136,7 @@ namespace Aspenlaub.Net.GitHub.CSharp.SubspaceSensor {
             }
 
             var newFolder = transmission.Valid ? SubspaceFolders.Inbox : SubspaceFolders.Error;
-            File.Move(transmission.FullFileName, new SubspaceFolder(vFolderResolver).FolderPath(newFolder) + transmission.FileName);
+            File.Move(transmission.FullFileName, await new SubspaceFolder(vFolderResolver).FolderPathAsync(newFolder) + transmission.FileName);
             followCommands.Add(new SubspaceAppCmd(vFolderResolver) { CmdType = SubspaceAppCmdType.Scanned, MessageId = transmission.MessageId });
             followCommands.Add(transmission.Valid
                 ? new SubspaceAppCmd(vFolderResolver) { CmdType = SubspaceAppCmdType.Received, MessageId = transmission.MessageId}
@@ -189,17 +190,17 @@ namespace Aspenlaub.Net.GitHub.CSharp.SubspaceSensor {
         }
 
 
-        public void Execute(SubspaceStation station, out List<SubspaceAppCmd> followCommands) {
-            followCommands = new List<SubspaceAppCmd>();
+        public async Task ExecuteAsync(SubspaceStation station, List<SubspaceAppCmd> followCommands) {
+            followCommands.Clear();
 
             switch(vCmdType) {
                 case SubspaceAppCmdType.None : {
                 } break;
                 case SubspaceAppCmdType.Initialise : {
-                    Initialise(station);
+                    await InitialiseAsync(station);
                 } break;
                 case SubspaceAppCmdType.Scan : {
-                    Scan(station, followCommands);
+                    await ScanAsync(station, followCommands);
                 } break;
                 case SubspaceAppCmdType.Scanned : {
                     Scanned(station, followCommands);
