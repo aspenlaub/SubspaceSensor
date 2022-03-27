@@ -10,16 +10,19 @@ using Autofac;
 
 namespace Aspenlaub.Net.GitHub.CSharp.SubspaceSensor {
     public partial class SubspaceStation {
-        private SubspaceFolders vFolder;
-        private string vMessageId;
+        private SubspaceFolders Folder;
+        private string MessageId;
 
-        private readonly IContainer vContainer;
+        private readonly IFolderResolver FolderResolver;
+        private readonly SubspaceTransmissionFactory SubspaceTransmissionFactory;
 
         public SubspaceStation() {
             InitializeComponent();
-            vFolder = SubspaceFolders.None;
-            vMessageId = "";
-            vContainer = new ContainerBuilder().UsePegh(new DummyCsArgumentPrompter()).Build();
+            Folder = SubspaceFolders.None;
+            MessageId = "";
+            var container = new ContainerBuilder().UsePegh(new DummyCsArgumentPrompter()).Build();
+            FolderResolver = container.Resolve<IFolderResolver>();
+            SubspaceTransmissionFactory = new SubspaceTransmissionFactory(FolderResolver);
         }
 
         public SubspaceFolderBrowser FolderBrowser(SubspaceFolders folder) {
@@ -102,9 +105,9 @@ namespace Aspenlaub.Net.GitHub.CSharp.SubspaceSensor {
             }
             ButtonDelete.IsEnabled = transmission.Valid && transmission.Folder != SubspaceFolders.Port;
             ButtonDeleteAll.IsEnabled = transmission.Valid && transmission.Folder == SubspaceFolders.Inbox;
-            vFolder = transmission.Folder;
-            vMessageId = transmission.MessageId;
-            FolderBrowser(vFolder).SelectTransmission(transmission);
+            Folder = transmission.Folder;
+            MessageId = transmission.MessageId;
+            FolderBrowser(Folder).SelectTransmission(transmission);
         }
 
         private void OnNavigationRequest(object sender, RequestNavigateEventArgs e) {
@@ -112,19 +115,19 @@ namespace Aspenlaub.Net.GitHub.CSharp.SubspaceSensor {
         }
 
         private void OnDeleteClick(object sender, RoutedEventArgs e) {
-            var applicationCommand = new SubspaceAppCmd(vContainer.Resolve<IFolderResolver>()) { CmdType = SubspaceAppCmdType.Delete, Folder = vFolder, MessageId = vMessageId };
+            var applicationCommand = new SubspaceAppCmd(FolderResolver, SubspaceTransmissionFactory) { CmdType = SubspaceAppCmdType.Delete, Folder = Folder, MessageId = MessageId };
             ((SubspaceStationApp)Application.Current).AddCommand(applicationCommand);
         }
 
         private void OnDeleteAllClick(object sender, RoutedEventArgs e) {
-            var applicationCommand = new SubspaceAppCmd(vContainer.Resolve<IFolderResolver>()) { CmdType = SubspaceAppCmdType.DeleteAll };
+            var applicationCommand = new SubspaceAppCmd(FolderResolver, SubspaceTransmissionFactory) { CmdType = SubspaceAppCmdType.DeleteAll };
             ((SubspaceStationApp)Application.Current).AddCommand(applicationCommand);
         }
 
         private void OnUpdatePortClick(object sender, RoutedEventArgs e) {
-            var applicationCommand = new SubspaceAppCmd(vContainer.Resolve<IFolderResolver>()) { CmdType = SubspaceAppCmdType.Initialise };
+            var applicationCommand = new SubspaceAppCmd(FolderResolver, SubspaceTransmissionFactory) { CmdType = SubspaceAppCmdType.Initialise };
             ((SubspaceStationApp)Application.Current).AddCommand(applicationCommand);
-            applicationCommand = new SubspaceAppCmd(vContainer.Resolve<IFolderResolver>()) { CmdType = SubspaceAppCmdType.Scan };
+            applicationCommand = new SubspaceAppCmd(FolderResolver, SubspaceTransmissionFactory) { CmdType = SubspaceAppCmdType.Scan };
             ((SubspaceStationApp)Application.Current).AddCommand(applicationCommand);
         }
     }

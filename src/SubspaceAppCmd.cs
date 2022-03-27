@@ -104,88 +104,90 @@ namespace Aspenlaub.Net.GitHub.CSharp.SubspaceSensor {
 
         public SubspaceFolders ToFolder { get; private set; }
 
-        private readonly IFolderResolver vFolderResolver;
+        private readonly IFolderResolver FolderResolver;
+        private readonly SubspaceTransmissionFactory SubspaceTransmissionFactory;
 
-        public SubspaceAppCmd(IFolderResolver folderResolver) {
+        public SubspaceAppCmd(IFolderResolver folderResolver, SubspaceTransmissionFactory subspaceTransmissionFactory) {
             vCmdType = SubspaceAppCmdType.None;
             vFolder = SubspaceFolders.None;
             ToFolder = SubspaceFolders.None;
             vMessageId = "";
-            vFolderResolver = folderResolver;
+            FolderResolver = folderResolver;
+            SubspaceTransmissionFactory = subspaceTransmissionFactory;
         }
 
         private async Task InitialiseAsync(SubspaceStation station) {
             foreach (var folder in Enum.GetValues(typeof(SubspaceFolders)).Cast<SubspaceFolders>().Where(folder => folder != SubspaceFolders.None)) {
                 var folderBrowser = station.FolderBrowser(folder);
-                folderBrowser.Initialise(await new SubspaceFolder(vFolderResolver).ScanFolderAsync(folder));
+                await folderBrowser.InitialiseAsync(await new SubspaceFolder(FolderResolver, SubspaceTransmissionFactory).ScanFolderAsync(folder));
             }
         }
 
         private async Task ScanAsync(SubspaceStation station, List<SubspaceAppCmd> followCommands) {
             var folderBrowser = station.FolderBrowser(vFolder);
             if (folderBrowser.IsEmpty) {
-                folderBrowser.Initialise(await new SubspaceFolder(vFolderResolver).ScanFolderAsync(vFolder));
+                await folderBrowser.InitialiseAsync(await new SubspaceFolder(FolderResolver, SubspaceTransmissionFactory).ScanFolderAsync(vFolder));
             }
             if (folderBrowser.IsEmpty) {
                 return;
             }
 
-            var transmission = folderBrowser.Pop(followCommands);
+            var transmission = await folderBrowser.PopAsync(followCommands);
             if (transmission.IsPseudo) {
                 return;
             }
 
             var newFolder = transmission.Valid ? SubspaceFolders.Inbox : SubspaceFolders.Error;
-            File.Move(transmission.FullFileName, await new SubspaceFolder(vFolderResolver).FolderPathAsync(newFolder) + transmission.FileName);
-            followCommands.Add(new SubspaceAppCmd(vFolderResolver) { CmdType = SubspaceAppCmdType.Scanned, MessageId = transmission.MessageId });
+            File.Move(await transmission.FullFileNameAsync(), await new SubspaceFolder(FolderResolver, SubspaceTransmissionFactory).FolderPathAsync(newFolder) + transmission.FileName);
+            followCommands.Add(new SubspaceAppCmd(FolderResolver, SubspaceTransmissionFactory) { CmdType = SubspaceAppCmdType.Scanned, MessageId = transmission.MessageId });
             followCommands.Add(transmission.Valid
-                ? new SubspaceAppCmd(vFolderResolver) { CmdType = SubspaceAppCmdType.Received, MessageId = transmission.MessageId}
-                : new SubspaceAppCmd(vFolderResolver) { CmdType = SubspaceAppCmdType.ReceivedError, MessageId = transmission.MessageId});
-            followCommands.Add(new SubspaceAppCmd(vFolderResolver) { CmdType = SubspaceAppCmdType.Scan });
+                ? new SubspaceAppCmd(FolderResolver, SubspaceTransmissionFactory) { CmdType = SubspaceAppCmdType.Received, MessageId = transmission.MessageId}
+                : new SubspaceAppCmd(FolderResolver, SubspaceTransmissionFactory) { CmdType = SubspaceAppCmdType.ReceivedError, MessageId = transmission.MessageId});
+            followCommands.Add(new SubspaceAppCmd(FolderResolver, SubspaceTransmissionFactory) { CmdType = SubspaceAppCmdType.Scan });
         }
 
-        private void Scanned(SubspaceStation station, List<SubspaceAppCmd> followCommands) {
-            station.FolderBrowser(vFolder).MessageGone(vMessageId, followCommands);
+        private async Task ScannedAsync(SubspaceStation station, List<SubspaceAppCmd> followCommands) {
+            await station.FolderBrowser(vFolder).MessageGoneAsync(vMessageId, followCommands);
         }
 
-        private void Received(SubspaceStation station, List<SubspaceAppCmd> followCommands) {
-            station.FolderBrowser(ToFolder).NewMessage(vMessageId, followCommands);
+        private async Task ReceivedAsync(SubspaceStation station, List<SubspaceAppCmd> followCommands) {
+            await station.FolderBrowser(ToFolder).NewMessageAsync(vMessageId, followCommands);
         }
 
-        private void ReceivedError(SubspaceStation station, List<SubspaceAppCmd> followCommands) {
-            station.FolderBrowser(ToFolder).NewMessage(vMessageId, followCommands);
+        private async Task ReceivedErrorAsync(SubspaceStation station, List<SubspaceAppCmd> followCommands) {
+            await station.FolderBrowser(ToFolder).NewMessageAsync(vMessageId, followCommands);
         }
 
-        private void Delete(SubspaceStation station, List<SubspaceAppCmd> followCommands) {
+        private async Task DeleteAsync(SubspaceStation station, List<SubspaceAppCmd> followCommands) {
             var folderBrowser = station.FolderBrowser(vFolder);
             if (folderBrowser.IsEmpty) {
                 return;
             }
 
-            var transmission = new SubspaceTransmission(vFolderResolver) { Folder = vFolder, MessageId = vMessageId };
+            var transmission = await SubspaceTransmissionFactory.CreateAsync(vFolder, vMessageId);
             if (transmission.IsPseudo) {
                 return;
             }
 
-            File.Delete(transmission.FullFileName);
-            folderBrowser.MessageGone(vMessageId, followCommands);
+            File.Delete(await transmission.FullFileNameAsync());
+            await folderBrowser.MessageGoneAsync(vMessageId, followCommands);
         }
 
-        private void DeleteAll(SubspaceStation station, List<SubspaceAppCmd> followCommands) {
+        private async Task DeleteAllAsync(SubspaceStation station, List<SubspaceAppCmd> followCommands) {
             var folderBrowser = station.FolderBrowser(vFolder);
             do {
-                var transmission = folderBrowser.Pop(followCommands);
+                var transmission = await folderBrowser.PopAsync(followCommands);
                 // ReSharper disable once UseNullPropagationWhenPossible
                 if (transmission == null) { return; }
                 if (!transmission.Valid) { return; }
 
-                File.Delete(transmission.FullFileName);
-                folderBrowser.MessageGone(transmission.MessageId, followCommands);
+                File.Delete(await transmission.FullFileNameAsync());
+                await folderBrowser.MessageGoneAsync(transmission.MessageId, followCommands);
             } while (true);
         }
 
-        private void MessageSelected(SubspaceStation station) {
-            var transmission = new SubspaceTransmission(vFolderResolver) { Folder = vFolder, MessageId = vMessageId };
+        private async Task MessageSelectedAsync(SubspaceStation station) {
+            var transmission = await SubspaceTransmissionFactory.CreateAsync(vFolder, vMessageId);
             station.SetTransmission(transmission);
         }
 
@@ -203,22 +205,22 @@ namespace Aspenlaub.Net.GitHub.CSharp.SubspaceSensor {
                     await ScanAsync(station, followCommands);
                 } break;
                 case SubspaceAppCmdType.Scanned : {
-                    Scanned(station, followCommands);
+                    await ScannedAsync(station, followCommands);
                 } break;
                 case SubspaceAppCmdType.Received : {
-                    Received(station, followCommands);
+                    await ReceivedAsync(station, followCommands);
                 } break;
                 case SubspaceAppCmdType.ReceivedError : {
-                    ReceivedError(station, followCommands);
+                    await ReceivedErrorAsync(station, followCommands);
                 } break;
                 case SubspaceAppCmdType.Delete : {
-                    Delete(station, followCommands);
+                    await DeleteAsync(station, followCommands);
                 } break;
                 case SubspaceAppCmdType.DeleteAll : {
-                    DeleteAll(station, followCommands);
+                    await DeleteAllAsync(station, followCommands);
                 } break;
                 case SubspaceAppCmdType.MessageSelected : {
-                    MessageSelected(station);
+                    await MessageSelectedAsync(station);
                 } break;
             }
         }

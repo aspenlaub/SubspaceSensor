@@ -1,35 +1,13 @@
 using System;
 using System.IO;
+using System.Threading.Tasks;
 using System.Xml;
 using Aspenlaub.Net.GitHub.CSharp.Pegh.Interfaces;
 
 namespace Aspenlaub.Net.GitHub.CSharp.SubspaceSensor {
     public class SubspaceTransmission : IComparable {
-        private string vMessageId;
-        public string MessageId {
-            get => vMessageId;
-            set {
-                if (vMessageId.Length > 0) {
-                    throw new Exception("Attempt to overwrite message ID");
-                }
-
-                vMessageId = value;
-                TryReading();
-            }
-        }
-
-        private SubspaceFolders vFolder;
-        public SubspaceFolders Folder {
-            get => vFolder;
-            set {
-                if (vFolder != SubspaceFolders.None) {
-                    throw new Exception("Attempt to overwrite folder");
-                }
-
-                vFolder = value;
-                TryReading();
-            }
-        }
+        public string MessageId { get; private set; }
+        public SubspaceFolders Folder { get; private set; }
 
         public DateTime Created { get; set; }
 
@@ -42,7 +20,7 @@ namespace Aspenlaub.Net.GitHub.CSharp.SubspaceSensor {
 
         public bool Valid { get; private set; }
 
-        public bool IsPseudo => vMessageId.Length == 0 || vMessageId[0] == '(';
+        public bool IsPseudo => MessageId.Length == 0 || MessageId[0] == '(';
 
         public string Description {
             get {
@@ -58,21 +36,23 @@ namespace Aspenlaub.Net.GitHub.CSharp.SubspaceSensor {
                         }
                     }
 
-                    s = vMessageId + ' ' + s;
+                    s = MessageId + ' ' + s;
                 } else {
-                    s = vMessageId;
+                    s = MessageId;
                 }
 
                 return s;
             }
         }
 
-        private readonly IFolderResolver vFolderResolver;
+        private readonly IFolderResolver FolderResolver;
+        private readonly SubspaceTransmissionFactory SubspaceTransmissionFactory;
 
-        public SubspaceTransmission(IFolderResolver folderResolver) {
-            vMessageId = "";
-            vFolder = SubspaceFolders.None;
-            vFolderResolver = folderResolver;
+        public SubspaceTransmission(IFolderResolver folderResolver, SubspaceTransmissionFactory subspaceTransmissionFactory) {
+            MessageId = "";
+            Folder = SubspaceFolders.None;
+            FolderResolver = folderResolver;
+            SubspaceTransmissionFactory = subspaceTransmissionFactory;
             Invalidate();
         }
 
@@ -87,24 +67,26 @@ namespace Aspenlaub.Net.GitHub.CSharp.SubspaceSensor {
                 return -1;
             }
 
-            return String.CompareOrdinal(transmission.vMessageId, vMessageId);
+            return String.CompareOrdinal(transmission.MessageId, MessageId);
         }
 
         private void Invalidate() {
             From = ""; To = ""; Cc = ""; Bcc = ""; Header = ""; Text = "";    Valid = false;
         }
 
-        public string FileName => "subspacemsg" + vMessageId + ".xml";
+        public string FileName => "subspacemsg" + MessageId + ".xml";
 
-        public string FullFileName => new SubspaceFolder(vFolderResolver).FolderPathAsync(vFolder).Result + FileName;
+        public async Task<string> FullFileNameAsync() {
+            return await new SubspaceFolder(FolderResolver, SubspaceTransmissionFactory).FolderPathAsync(Folder) + FileName;
+        }
 
-        private void TryReading() {
-            if (vMessageId.Length == 0 || vFolder == SubspaceFolders.None) {
+        private async Task TryReadingAsync() {
+            if (MessageId.Length == 0 || Folder == SubspaceFolders.None) {
                 Invalidate();
                 return;
             }
 
-            var fileName = FullFileName;
+            var fileName = await FullFileNameAsync();
             if (!File.Exists(fileName)) {
                 Invalidate();
                 return;
@@ -142,10 +124,25 @@ namespace Aspenlaub.Net.GitHub.CSharp.SubspaceSensor {
                 }
 
                 textReader.Close();
-                Valid = From.Length > 0 && To.Length > 0 && Header.Length > 0 && vMessageId.IndexOf("http://www.", StringComparison.InvariantCulture) < 0;
+                Valid = From.Length > 0 && To.Length > 0 && Header.Length > 0 && MessageId.IndexOf("http://www.", StringComparison.InvariantCulture) < 0;
             } catch {
                 Invalidate();
             }
+        }
+
+        public async Task SetFolderAndMessageIdAsync(SubspaceFolders folder, string messageId) {
+            if (MessageId.Length > 0) {
+                throw new Exception("Attempt to overwrite message ID");
+            }
+            if (Folder != SubspaceFolders.None) {
+                throw new Exception("Attempt to overwrite folder");
+            }
+
+
+            Folder = folder;
+            MessageId = messageId;
+
+            await TryReadingAsync();
         }
     }
 }

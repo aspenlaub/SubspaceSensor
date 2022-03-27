@@ -8,10 +8,13 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace Aspenlaub.Net.GitHub.CSharp.SubspaceSensor.Test {
     [TestClass]
     public class SubspaceFolderTest {
-        private readonly IContainer vContainer;
+        private readonly IFolderResolver FolderResolver;
+        private readonly SubspaceTransmissionFactory SubspaceTransmissionFactory;
 
         public SubspaceFolderTest() {
-            vContainer = new ContainerBuilder().UsePegh(new DummyCsArgumentPrompter()).Build();
+            var container = new ContainerBuilder().UsePegh(new DummyCsArgumentPrompter()).Build();
+            FolderResolver = container.Resolve<IFolderResolver>();
+            SubspaceTransmissionFactory = new SubspaceTransmissionFactory(FolderResolver);
         }
 
         [TestMethod]
@@ -22,7 +25,7 @@ namespace Aspenlaub.Net.GitHub.CSharp.SubspaceSensor.Test {
         }
 
         private async Task VerifyThatSubspaceFolderExistsAsync(SubspaceFolders subspaceFolder) {
-            var folder = await new SubspaceFolder(vContainer.Resolve<IFolderResolver>()).FolderPathAsync(subspaceFolder);
+            var folder = await new SubspaceFolder(FolderResolver, SubspaceTransmissionFactory).FolderPathAsync(subspaceFolder);
             Assert.IsTrue(Directory.Exists(folder));
         }
     }

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using Aspenlaub.Net.GitHub.CSharp.Pegh.Components;
@@ -8,11 +9,12 @@ using Autofac;
 
 namespace Aspenlaub.Net.GitHub.CSharp.SubspaceSensor {
     public class SubspaceFolderBrowser : Expander {
-        private SubspaceFolders vFolder;
+        private SubspaceFolders Folder;
+
         public string SubFolder {
-            get => Enum.GetName(typeof(SubspaceFolders), vFolder);
+            get => Enum.GetName(typeof(SubspaceFolders), Folder);
             set {
-                if (vFolder != SubspaceFolders.None) {
+                if (Folder != SubspaceFolders.None) {
                     throw new Exception("Attempt to update sub folder");
                 }
 
@@ -20,44 +22,46 @@ namespace Aspenlaub.Net.GitHub.CSharp.SubspaceSensor {
             }
         }
 
-        private readonly ScrollViewer vScrollViewer;
-        private readonly ListBox vListBox;
-        private readonly List<SubspaceTransmission> vTransmissions;
+        private readonly ScrollViewer ScrollViewer;
+        private readonly ListBox ListBox;
+        private readonly List<SubspaceTransmission> Transmissions;
 
-        private readonly IFolderResolver vFolderResolver = new ContainerBuilder().UsePegh(new DummyCsArgumentPrompter()).Build().Resolve<IFolderResolver>();
+        private readonly IFolderResolver FolderResolver = new ContainerBuilder().UsePegh(new DummyCsArgumentPrompter()).Build().Resolve<IFolderResolver>();
+        private readonly SubspaceTransmissionFactory SubspaceTransmissionFactory;
 
-        public bool IsEmpty => vTransmissions.Count == 0;
+        public bool IsEmpty => Transmissions.Count == 0;
 
-        private void DefaultTransmission() {
-            vTransmissions.Add(new SubspaceTransmission(vFolderResolver) { MessageId = "(no messages)" });
+        private async Task DefaultTransmissionAsync() {
+            Transmissions.Add(await SubspaceTransmissionFactory.CreateAsync(SubspaceFolders.None, "(no messages)"));
         }
 
         public SubspaceFolderBrowser() {
             Margin = new Thickness(0, 3, 0, 3);
 
-            vTransmissions = new List<SubspaceTransmission>();
-            DefaultTransmission();
+            SubspaceTransmissionFactory = new SubspaceTransmissionFactory(FolderResolver);
 
-            vListBox = new ListBox {
+            Transmissions = new List<SubspaceTransmission>();
+
+            ListBox = new ListBox {
                 SelectionMode = SelectionMode.Single,
-                ItemsSource = vTransmissions,
+                ItemsSource = Transmissions,
                 DisplayMemberPath = nameof(SubspaceTransmission.Description)
             };
-            vListBox.SelectionChanged += OnSelectionChanged;
-            vListBox.GotFocus += OnFocus;
+            ListBox.SelectionChanged += OnSelectionChanged;
+            ListBox.GotFocus += OnFocus;
 
-            vScrollViewer = new ScrollViewer {
-                Content = vListBox,
+            ScrollViewer = new ScrollViewer {
+                Content = ListBox,
                 Margin = new Thickness(0, 8, 0, 0)
             };
 
-            Content = vScrollViewer;
+            Content = ScrollViewer;
         }
 
         private string ExpanderHeader() {
             string s;
 
-            switch(vFolder) {
+            switch(Folder) {
                 case SubspaceFolders.Port : {
                     s = "Port";
                 } break;
@@ -72,8 +76,8 @@ namespace Aspenlaub.Net.GitHub.CSharp.SubspaceSensor {
                 } break;
             }
 
-            if (vTransmissions.Count > 0 && !vTransmissions[0].IsPseudo) {
-                s = s + " (" + vTransmissions.Count + ')';
+            if (Transmissions.Count > 0 && !Transmissions[0].IsPseudo) {
+                s = s + " (" + Transmissions.Count + ')';
             }
             return s;
         }
@@ -92,7 +96,7 @@ namespace Aspenlaub.Net.GitHub.CSharp.SubspaceSensor {
                 height = 1;
             }
             height = 15 * height;
-            if (vFolder == SubspaceFolders.Inbox) {
+            if (Folder == SubspaceFolders.Inbox) {
                 height = height * 2;
             }
             height = height + 2;
@@ -101,45 +105,45 @@ namespace Aspenlaub.Net.GitHub.CSharp.SubspaceSensor {
 
         private void ChangeSubFolder(string newSubFolder) {
             try {
-                vFolder = (SubspaceFolders)Enum.Parse(typeof(SubspaceFolders), newSubFolder);
+                Folder = (SubspaceFolders)Enum.Parse(typeof(SubspaceFolders), newSubFolder);
             } catch {
-                vFolder = SubspaceFolders.None;
+                Folder = SubspaceFolders.None;
             }
             Header = ExpanderHeader();
-            vScrollViewer.MaxHeight = MaxListBoxHeight();
+            ScrollViewer.MaxHeight = MaxListBoxHeight();
         }
 
-        public void Initialise(List<SubspaceTransmission> transmissions) {
-            while (vTransmissions.Count > transmissions.Count) {
-                vTransmissions.RemoveAt(vTransmissions.Count - 1);
+        public async Task InitialiseAsync(List<SubspaceTransmission> transmissions) {
+            while (Transmissions.Count > transmissions.Count) {
+                Transmissions.RemoveAt(Transmissions.Count - 1);
             }
 
             if (transmissions.Count > 0) {
                 int i;
-                for (i = 0; i < vTransmissions.Count; i ++) {
-                    if (vTransmissions[i].MessageId != transmissions[i].MessageId) {
-                        vTransmissions[i] = transmissions[i];
+                for (i = 0; i < Transmissions.Count; i ++) {
+                    if (Transmissions[i].MessageId != transmissions[i].MessageId) {
+                        Transmissions[i] = transmissions[i];
                     }
                 }
-                for (i = vTransmissions.Count; i < transmissions.Count; i ++) {
-                    vTransmissions.Add(transmissions[i]);
+                for (i = Transmissions.Count; i < transmissions.Count; i ++) {
+                    Transmissions.Add(transmissions[i]);
                 }
             } else {
-                DefaultTransmission();
+                await DefaultTransmissionAsync();
             }
 
-            vListBox.ItemsSource = null;
-            vListBox.ItemsSource = vTransmissions;
+            ListBox.ItemsSource = null;
+            ListBox.ItemsSource = Transmissions;
             Header = ExpanderHeader();
         }
 
         private void ShowSelection() {
-            var selected = (SubspaceTransmission)vListBox.SelectedItem;
+            var selected = (SubspaceTransmission)ListBox.SelectedItem;
             if (selected?.IsPseudo != false) {
                 return;
             }
 
-            var cmd = new SubspaceAppCmd(vFolderResolver) { CmdType = SubspaceAppCmdType.MessageSelected, Folder = selected.Folder, MessageId = selected.MessageId };
+            var cmd = new SubspaceAppCmd(FolderResolver, SubspaceTransmissionFactory) { CmdType = SubspaceAppCmdType.MessageSelected, Folder = selected.Folder, MessageId = selected.MessageId };
             ((SubspaceStationApp)Application.Current).AddCommand(cmd);
         }
 
@@ -151,82 +155,82 @@ namespace Aspenlaub.Net.GitHub.CSharp.SubspaceSensor {
             ShowSelection();
         }
 
-        public SubspaceTransmission Pop(List<SubspaceAppCmd> followCommands) {
+        public async Task<SubspaceTransmission> PopAsync(List<SubspaceAppCmd> followCommands) {
             if (IsEmpty) {
                 return null;
             }
 
-            var transmission = vTransmissions[0];
-            MessageGone(transmission.MessageId, followCommands);
+            var transmission = Transmissions[0];
+            await MessageGoneAsync(transmission.MessageId, followCommands);
             return transmission;
         }
 
-        public void MessageGone(string messageId, List<SubspaceAppCmd> followCommands) {
+        public async Task MessageGoneAsync(string messageId, List<SubspaceAppCmd> followCommands) {
             int i;
 
-            for (i = 0; i < vTransmissions.Count && vTransmissions[i].MessageId != messageId; i ++) {
+            for (i = 0; i < Transmissions.Count && Transmissions[i].MessageId != messageId; i ++) {
             }
 
-            if (i >= vTransmissions.Count) {
+            if (i >= Transmissions.Count) {
                 return;
             }
 
-            var selected = vListBox.SelectedIndex == i;
+            var selected = ListBox.SelectedIndex == i;
             if (selected) {
-                if (i + 1 < vTransmissions.Count) {
-                    followCommands.Add(new SubspaceAppCmd(vFolderResolver) { CmdType = SubspaceAppCmdType.MessageSelected, Folder = vTransmissions[i + 1].Folder, MessageId = vTransmissions[i + 1].MessageId });
+                if (i + 1 < Transmissions.Count) {
+                    followCommands.Add(new SubspaceAppCmd(FolderResolver, SubspaceTransmissionFactory) { CmdType = SubspaceAppCmdType.MessageSelected, Folder = Transmissions[i + 1].Folder, MessageId = Transmissions[i + 1].MessageId });
                 } else if (i > 0) {
-                    followCommands.Add(new SubspaceAppCmd(vFolderResolver) { CmdType = SubspaceAppCmdType.MessageSelected, Folder = vTransmissions[i - 1].Folder, MessageId = vTransmissions[i - 1].MessageId });
+                    followCommands.Add(new SubspaceAppCmd(FolderResolver, SubspaceTransmissionFactory) { CmdType = SubspaceAppCmdType.MessageSelected, Folder = Transmissions[i - 1].Folder, MessageId = Transmissions[i - 1].MessageId });
                 }
             }
-            vTransmissions.RemoveAt(i);
-            if (vTransmissions.Count == 0) {
-                DefaultTransmission();
+            Transmissions.RemoveAt(i);
+            if (Transmissions.Count == 0) {
+                await DefaultTransmissionAsync();
                 if (selected) {
-                    followCommands.Add(new SubspaceAppCmd(vFolderResolver) { CmdType = SubspaceAppCmdType.MessageSelected, Folder = vFolder });
+                    followCommands.Add(new SubspaceAppCmd(FolderResolver, SubspaceTransmissionFactory) { CmdType = SubspaceAppCmdType.MessageSelected, Folder = Folder });
                 }
             }
-            vListBox.ItemsSource = null;
-            vListBox.ItemsSource = vTransmissions;
+            ListBox.ItemsSource = null;
+            ListBox.ItemsSource = Transmissions;
             Header = ExpanderHeader();
         }
 
-        public void NewMessage(string messageId, List<SubspaceAppCmd> followCommands) {
+        public async Task NewMessageAsync(string messageId, List<SubspaceAppCmd> followCommands) {
             int i;
 
-            for (i = 0; i < vTransmissions.Count && vTransmissions[i].MessageId != messageId; i ++) {
+            for (i = 0; i < Transmissions.Count && Transmissions[i].MessageId != messageId; i ++) {
             }
 
-            if (i < vTransmissions.Count) {
+            if (i < Transmissions.Count) {
                 return;
             }
 
-            while (vTransmissions.Count > 0 && vTransmissions[0].IsPseudo) {
-                vTransmissions.RemoveAt(0);
+            while (Transmissions.Count > 0 && Transmissions[0].IsPseudo) {
+                Transmissions.RemoveAt(0);
             }
 
-            vTransmissions.Add(new SubspaceTransmission(vFolderResolver) { Folder = vFolder, MessageId = messageId });
-            vTransmissions.Sort();
-            vListBox.ItemsSource = null;
-            vListBox.ItemsSource = vTransmissions;
+            Transmissions.Add(await SubspaceTransmissionFactory.CreateAsync(Folder, messageId));
+            Transmissions.Sort();
+            ListBox.ItemsSource = null;
+            ListBox.ItemsSource = Transmissions;
             Header = ExpanderHeader();
         }
 
         public void SelectTransmission(SubspaceTransmission transmission) {
             int i;
 
-            for (i = 0; i < vTransmissions.Count && vTransmissions[i].MessageId != transmission.MessageId; i ++) {
+            for (i = 0; i < Transmissions.Count && Transmissions[i].MessageId != transmission.MessageId; i ++) {
             }
 
-            if (i >= vTransmissions.Count || vListBox.SelectedIndex == i) {
+            if (i >= Transmissions.Count || ListBox.SelectedIndex == i) {
                 return;
             }
 
-            if (vTransmissions[i].MessageId != ((SubspaceTransmission)vListBox.Items[i]).MessageId) {
+            if (Transmissions[i].MessageId != ((SubspaceTransmission)ListBox.Items[i]).MessageId) {
                 throw new Exception("Transmissions and items out of synchronization!");
             }
 
-            vListBox.SelectedIndex = i;
+            ListBox.SelectedIndex = i;
             Focus();
         }
     }

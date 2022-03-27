@@ -2,7 +2,6 @@ using System;
 using System.Windows;
 using System.Windows.Input;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 using System.Windows.Threading;
 using Aspenlaub.Net.GitHub.CSharp.Pegh.Components;
 using Aspenlaub.Net.GitHub.CSharp.Pegh.Interfaces;
@@ -10,20 +9,24 @@ using Autofac;
 
 namespace Aspenlaub.Net.GitHub.CSharp.SubspaceSensor {
     public partial class SubspaceStationApp {
-        private List<SubspaceAppCmd> vCommands;
-        private int vRotator;
+        private List<SubspaceAppCmd> Commands;
+        private int Rotator;
 
-        private readonly IContainer vContainer;
+        private readonly IFolderResolver FolderResolver;
+        private readonly SubspaceTransmissionFactory SubspaceTransmissionFactory;
 
         public SubspaceStationApp() {
-            vContainer = new ContainerBuilder().UsePegh(new DummyCsArgumentPrompter()).Build();
+            var container = new ContainerBuilder().UsePegh(new DummyCsArgumentPrompter()).Build();
+            FolderResolver = container.Resolve<IFolderResolver>();
+            SubspaceTransmissionFactory = new SubspaceTransmissionFactory(FolderResolver);
+
         }
 
         protected override void OnStartup(StartupEventArgs e) {
             base.OnStartup(e);
-            vCommands = new List<SubspaceAppCmd> {
-                new(vContainer.Resolve<IFolderResolver>()) { CmdType = SubspaceAppCmdType.Initialise },
-                new(vContainer.Resolve<IFolderResolver>()) { CmdType = SubspaceAppCmdType.Scan }
+            Commands = new List<SubspaceAppCmd> {
+                new(FolderResolver, SubspaceTransmissionFactory) { CmdType = SubspaceAppCmdType.Initialise },
+                new(FolderResolver, SubspaceTransmissionFactory) { CmdType = SubspaceAppCmdType.Scan }
             };
 
             if (Current.Dispatcher == null) {
@@ -37,14 +40,14 @@ namespace Aspenlaub.Net.GitHub.CSharp.SubspaceSensor {
         public void AddCommand(SubspaceAppCmd cmd) {
             int i;
 
-            for (i = 0; i < vCommands.Count; ) {
-                if (vCommands[i].CmdType == cmd.CmdType) {
-                    vCommands.RemoveAt(i);
+            for (i = 0; i < Commands.Count; ) {
+                if (Commands[i].CmdType == cmd.CmdType) {
+                    Commands.RemoveAt(i);
                 } else {
                     i ++;
                 }
             }
-            vCommands.Add(cmd);
+            Commands.Add(cmd);
         }
 
         private async void SubspaceIdleCallbackAsync(object sender, EventArgs e) {
@@ -52,23 +55,23 @@ namespace Aspenlaub.Net.GitHub.CSharp.SubspaceSensor {
                 throw new NullReferenceException(nameof(Current.MainWindow));
             }
 
-            if (vCommands.Count == 0) {
+            if (Commands.Count == 0) {
                 Current.MainWindow.Cursor = Cursors.Arrow;
-                vRotator = (vRotator + 1) % 20;
-                if (vRotator != 0) {
+                Rotator = (Rotator + 1) % 20;
+                if (Rotator != 0) {
                     return;
                 }
 
-                vCommands.Add(new SubspaceAppCmd(vContainer.Resolve<IFolderResolver>()) { CmdType = SubspaceAppCmdType.Initialise });
-                vCommands.Add(new SubspaceAppCmd(vContainer.Resolve<IFolderResolver>()) { CmdType = SubspaceAppCmdType.Scan });
+                Commands.Add(new SubspaceAppCmd(FolderResolver, SubspaceTransmissionFactory) { CmdType = SubspaceAppCmdType.Initialise });
+                Commands.Add(new SubspaceAppCmd(FolderResolver, SubspaceTransmissionFactory) { CmdType = SubspaceAppCmdType.Scan });
                 return;
             }
 
             Current.MainWindow.Cursor = Cursors.Wait;
             uint maxCommands = 10;
             do {
-                var applicationCommand = vCommands[0];
-                vCommands.RemoveAt(0);
+                var applicationCommand = Commands[0];
+                Commands.RemoveAt(0);
                 var station = (SubspaceStation)Current.MainWindow;
                 var followCommands = new List<SubspaceAppCmd>();
                 await applicationCommand.ExecuteAsync(station, followCommands);
@@ -76,7 +79,7 @@ namespace Aspenlaub.Net.GitHub.CSharp.SubspaceSensor {
                     AddCommand(followCmd);
                 }
                 maxCommands --;
-            } while (maxCommands > 0 && vCommands.Count > 0);
+            } while (maxCommands > 0 && Commands.Count > 0);
         }
     }
 }

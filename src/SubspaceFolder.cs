@@ -12,15 +12,17 @@ namespace Aspenlaub.Net.GitHub.CSharp.SubspaceSensor {
     }
 
     public class SubspaceFolder {
-        private readonly IFolderResolver vFolderResolver;
+        private readonly IFolderResolver FolderResolver;
+        private readonly SubspaceTransmissionFactory SubspaceTransmissionFactory;
 
-        public SubspaceFolder(IFolderResolver folderResolver) {
-            vFolderResolver = folderResolver;
+        public SubspaceFolder(IFolderResolver folderResolver, SubspaceTransmissionFactory subspaceTransmissionFactory) {
+            FolderResolver = folderResolver;
+            SubspaceTransmissionFactory = subspaceTransmissionFactory;
         }
 
         public async Task<IFolder> ConfiguredSubspaceFolderAsync() {
             var errorsAndInfos = new ErrorsAndInfos();
-            var subspaceFolder = await vFolderResolver.ResolveAsync(@"$(MainUserFolder)\Documents\Subspace", errorsAndInfos);
+            var subspaceFolder = await FolderResolver.ResolveAsync(@"$(MainUserFolder)\Documents\Subspace", errorsAndInfos);
             if (errorsAndInfos.AnyErrors()) {
                 throw new Exception(errorsAndInfos.ErrorsToString());
             }
@@ -50,10 +52,8 @@ namespace Aspenlaub.Net.GitHub.CSharp.SubspaceSensor {
             foreach(var fileInfo in dirInfo.GetFiles("subspacemsg*.xml")) {
                 var s = fileInfo.Name;
                 transmissions.Add(
-                    new SubspaceTransmission(vFolderResolver) {
-                        MessageId = s.Substring(11, s.Length - 15),
-                        Folder = folder,
-                        Created = fileInfo.CreationTime});
+                    await SubspaceTransmissionFactory.CreateAsync(folder, s.Substring(11, s.Length - 15), fileInfo.CreationTime)
+                );
             }
 
             transmissions.Sort();
