@@ -19,6 +19,7 @@
     <RepositoryUrl>https://github.com/aspenlaub/SubspaceSensor.git</RepositoryUrl>
     <RepositoryBranch>master</RepositoryBranch>
     <PackageId>SubspaceSensor</PackageId>
+    <ApplicationIcon>subspace.ico</ApplicationIcon>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
@@ -31,10 +32,18 @@
     <Page Remove="Test\**" />
   </ItemGroup>
   <ItemGroup>
+    <None Remove="subspace.ico" />
+  </ItemGroup>
+  <ItemGroup>
     <Page Remove="SubspaceStationApp.xaml" />
   </ItemGroup>
   <ItemGroup>
     <ApplicationDefinition Include="SubspaceStationApp.xaml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="subspace.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <ItemGroup>
     <Compile Update="Properties\Resources.Designer.cs">

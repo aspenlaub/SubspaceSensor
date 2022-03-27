@@ -4,9 +4,7 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" 
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" 
     xmlns:subspace="clr-namespace:Aspenlaub.Net.GitHub.CSharp.SubspaceSensor"
-	Title="SubspaceSensor"
-	Width="720"
-	Height="480">
+	Title="SubspaceSensor" Width="720" Height="480" Icon="subspace.ico">
 	<Window.Resources>
 		<Style
 			x:Key="FontStyle">
