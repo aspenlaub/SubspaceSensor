@@ -59,6 +59,6 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Pegh" Version="2.0.1960.469" />
+    <PackageReference Include="Pegh" Version="2.0.1965.15" />
   </ItemGroup>
 </Project>
