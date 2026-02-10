@@ -12,12 +12,12 @@ public class SubspaceTransmission : IComparable {
 
     public DateTime Created { get; set; }
 
-    public string From { get; private set; }
-    public string To { get; private set; }
-    public string Cc { get; private set; }
-    public string Bcc { get; private set; }
-    public string Header { get; private set; }
-    public string Text { get; private set; }
+    public string From { get; private set; } = "";
+    public string To { get; private set; } = "";
+    public string Cc { get; private set; } = "";
+    public string Bcc { get; private set; } = "";
+    public string Header { get; private set; } = "";
+    public string Text { get; private set; } = "";
 
     public bool Valid { get; private set; }
 
@@ -29,7 +29,7 @@ public class SubspaceTransmission : IComparable {
 
             if (Valid) {
                 s = Header;
-                var pos = 0;
+                int pos = 0;
                 while (s.Length > 24 && pos >= 0) {
                     pos = s.LastIndexOf(' ');
                     if (pos >= 0) {
@@ -46,29 +46,26 @@ public class SubspaceTransmission : IComparable {
         }
     }
 
-    private readonly IFolderResolver FolderResolver;
-    private readonly SubspaceTransmissionFactory SubspaceTransmissionFactory;
+    private readonly IFolderResolver _FolderResolver;
+    private readonly SubspaceTransmissionFactory _SubspaceTransmissionFactory;
 
     public SubspaceTransmission(IFolderResolver folderResolver, SubspaceTransmissionFactory subspaceTransmissionFactory) {
         MessageId = "";
         Folder = SubspaceFolders.None;
-        FolderResolver = folderResolver;
-        SubspaceTransmissionFactory = subspaceTransmissionFactory;
+        _FolderResolver = folderResolver;
+        _SubspaceTransmissionFactory = subspaceTransmissionFactory;
         Invalidate();
     }
 
     public int CompareTo(object o) {
         var transmission = (SubspaceTransmission)o;
-
-        if (Created < transmission.Created) {
-            return 1;
-        }
-
-        if (Created > transmission.Created) {
-            return -1;
-        }
-
-        return String.CompareOrdinal(transmission.MessageId, MessageId);
+        return transmission == null
+            ? throw new Exception(nameof(transmission))
+            : Created < transmission.Created
+                ? 1
+                : Created > transmission.Created
+                    ? -1
+                    : string.CompareOrdinal(transmission.MessageId, MessageId);
     }
 
     private void Invalidate() {
@@ -78,7 +75,7 @@ public class SubspaceTransmission : IComparable {
     public string FileName => "subspacemsg" + MessageId + ".xml";
 
     public async Task<string> FullFileNameAsync() {
-        return await new SubspaceFolder(FolderResolver, SubspaceTransmissionFactory).FolderPathAsync(Folder) + FileName;
+        return await new SubspaceFolder(_FolderResolver, _SubspaceTransmissionFactory).FolderPathAsync(Folder) + FileName;
     }
 
     private async Task TryReadingAsync() {
@@ -87,7 +84,7 @@ public class SubspaceTransmission : IComparable {
             return;
         }
 
-        var fileName = await FullFileNameAsync();
+        string fileName = await FullFileNameAsync();
         if (!File.Exists(fileName)) {
             Invalidate();
             return;
@@ -100,7 +97,7 @@ public class SubspaceTransmission : IComparable {
             textReader.Read();
             while (textReader.Read()) {
                 textReader.MoveToElement();
-                var nodeType = textReader.NodeType;
+                XmlNodeType nodeType = textReader.NodeType;
 
                 switch (nodeType) {
                     case XmlNodeType.Element when textReader.AttributeCount >= 8: {
@@ -109,11 +106,11 @@ public class SubspaceTransmission : IComparable {
                             return;
                         }
 
-                        From = textReader.GetAttribute("from");
-                        To = textReader.GetAttribute("to");
-                        Cc = textReader.GetAttribute("cc");
-                        Bcc = textReader.GetAttribute("bcc");
-                        Header = textReader.GetAttribute("header");
+                        From = textReader.GetAttribute("from") ?? throw new Exception("from");
+                        To = textReader.GetAttribute("to") ?? throw new Exception("to");
+                        Cc = textReader.GetAttribute("cc") ?? throw new Exception("cc");
+                        Bcc = textReader.GetAttribute("bcc") ?? throw new Exception("bcc");
+                        Header = textReader.GetAttribute("header") ?? throw new Exception("header");
                         break;
                     }
                     case XmlNodeType.Text when Text.Length > 0:
@@ -121,6 +118,40 @@ public class SubspaceTransmission : IComparable {
                     case XmlNodeType.Text:
                         Text = textReader.Value;
                         break;
+                    case XmlNodeType.None:
+                        break;
+                    case XmlNodeType.Attribute:
+                        break;
+                    case XmlNodeType.CDATA:
+                        break;
+                    case XmlNodeType.EntityReference:
+                        break;
+                    case XmlNodeType.Entity:
+                        break;
+                    case XmlNodeType.ProcessingInstruction:
+                        break;
+                    case XmlNodeType.Comment:
+                        break;
+                    case XmlNodeType.Document:
+                        break;
+                    case XmlNodeType.DocumentType:
+                        break;
+                    case XmlNodeType.DocumentFragment:
+                        break;
+                    case XmlNodeType.Notation:
+                        break;
+                    case XmlNodeType.Whitespace:
+                        break;
+                    case XmlNodeType.SignificantWhitespace:
+                        break;
+                    case XmlNodeType.EndElement:
+                        break;
+                    case XmlNodeType.EndEntity:
+                        break;
+                    case XmlNodeType.XmlDeclaration:
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException();
                 }
             }
 

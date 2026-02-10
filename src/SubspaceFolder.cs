@@ -12,48 +12,37 @@ public enum SubspaceFolders {
     None, Port, Error, Inbox,
 }
 
-public class SubspaceFolder {
-    private readonly IFolderResolver FolderResolver;
-    private readonly SubspaceTransmissionFactory SubspaceTransmissionFactory;
-
-    public SubspaceFolder(IFolderResolver folderResolver, SubspaceTransmissionFactory subspaceTransmissionFactory) {
-        FolderResolver = folderResolver;
-        SubspaceTransmissionFactory = subspaceTransmissionFactory;
-    }
-
+public class SubspaceFolder(IFolderResolver folderResolver, SubspaceTransmissionFactory subspaceTransmissionFactory) {
     public async Task<IFolder> ConfiguredSubspaceFolderAsync() {
         var errorsAndInfos = new ErrorsAndInfos();
-        var subspaceFolder = await FolderResolver.ResolveAsync(@"$(MainUserFolder)\Documents\Subspace", errorsAndInfos);
-        if (errorsAndInfos.AnyErrors()) {
-            throw new Exception(errorsAndInfos.ErrorsToString());
-        }
-
-        if (!subspaceFolder.Exists()) {
-            throw new Exception($"Folder does not exist: {subspaceFolder.FullName}");
-        }
-
-        return subspaceFolder;
+        IFolder subspaceFolder = await folderResolver.ResolveAsync(@"$(MainUserFolder)\Documents\Subspace", errorsAndInfos);
+        return errorsAndInfos.AnyErrors()
+            ? throw new Exception(errorsAndInfos.ErrorsToString())
+            : !subspaceFolder.Exists()
+                ? throw new Exception($"Folder does not exist: {subspaceFolder.FullName}")
+                : subspaceFolder;
     }
 
     public async Task<string> FolderPathAsync(SubspaceFolders folder) {
-        var path = (await ConfiguredSubspaceFolderAsync()).FullName + '\\';
+        string path = (await ConfiguredSubspaceFolderAsync()).FullName + '\\';
         switch(folder) {
             case SubspaceFolders.Port : return path + @"07_Port\";
             case SubspaceFolders.Error : return path + @"19_Error\";
             case SubspaceFolders.Inbox : return path + @"24_Inbox\";
+            case SubspaceFolders.None:
             default : throw new Exception("Asked for a folder browser that is not supported");
         }
     }
 
     public async Task<List<SubspaceTransmission>> ScanFolderAsync(SubspaceFolders folder) {
-        var path = await FolderPathAsync(folder);
+        string path = await FolderPathAsync(folder);
         var dirInfo = new DirectoryInfo(path);
         var transmissions = new List<SubspaceTransmission>();
         // ReSharper disable once LoopCanBeConvertedToQuery
-        foreach(var fileInfo in dirInfo.GetFiles("subspacemsg*.xml")) {
-            var s = fileInfo.Name;
+        foreach(FileInfo fileInfo in dirInfo.GetFiles("subspacemsg*.xml")) {
+            string s = fileInfo.Name;
             transmissions.Add(
-                await SubspaceTransmissionFactory.CreateAsync(folder, s.Substring(11, s.Length - 15), fileInfo.CreationTime)
+                await subspaceTransmissionFactory.CreateAsync(folder, s.Substring(11, s.Length - 15), fileInfo.CreationTime)
             );
         }
 

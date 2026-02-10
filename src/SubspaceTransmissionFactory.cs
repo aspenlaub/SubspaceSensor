@@ -4,21 +4,15 @@ using Aspenlaub.Net.GitHub.CSharp.Pegh.Interfaces;
 
 namespace Aspenlaub.Net.GitHub.CSharp.SubspaceSensor;
 
-public class SubspaceTransmissionFactory {
-    private readonly IFolderResolver FolderResolver;
-
-    public SubspaceTransmissionFactory(IFolderResolver folderResolver) {
-        FolderResolver = folderResolver;
-    }
-
+public class SubspaceTransmissionFactory(IFolderResolver folderResolver) {
     public async Task<SubspaceTransmission> CreateAsync(SubspaceFolders folder, string messageId, DateTime created) {
-        var transmission = await CreateAsync(folder, messageId);
+        SubspaceTransmission transmission = await CreateAsync(folder, messageId);
         transmission.Created = created;
         return transmission;
     }
 
     public async Task<SubspaceTransmission> CreateAsync(SubspaceFolders folder, string messageId) {
-        var transmission = new SubspaceTransmission(FolderResolver, this);
+        var transmission = new SubspaceTransmission(folderResolver, this);
         await transmission.SetFolderAndMessageIdAsync(folder, messageId);
         return transmission;
     }

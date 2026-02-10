@@ -9,13 +9,13 @@ namespace Aspenlaub.Net.GitHub.CSharp.SubspaceSensor.Test;
 
 [TestClass]
 public class SubspaceFolderTest {
-    private readonly IFolderResolver FolderResolver;
-    private readonly SubspaceTransmissionFactory SubspaceTransmissionFactory;
+    private readonly IFolderResolver _FolderResolver;
+    private readonly SubspaceTransmissionFactory _SubspaceTransmissionFactory;
 
     public SubspaceFolderTest() {
-        var container = new ContainerBuilder().UsePegh("SubspaceSensor", new DummyCsArgumentPrompter()).Build();
-        FolderResolver = container.Resolve<IFolderResolver>();
-        SubspaceTransmissionFactory = new SubspaceTransmissionFactory(FolderResolver);
+        var container = new ContainerBuilder().UsePegh("SubspaceSensor").Build();
+        _FolderResolver = container.Resolve<IFolderResolver>();
+        _SubspaceTransmissionFactory = new SubspaceTransmissionFactory(_FolderResolver);
     }
 
     [TestMethod]
@@ -26,7 +26,7 @@ public class SubspaceFolderTest {
     }
 
     private async Task VerifyThatSubspaceFolderExistsAsync(SubspaceFolders subspaceFolder) {
-        var folder = await new SubspaceFolder(FolderResolver, SubspaceTransmissionFactory).FolderPathAsync(subspaceFolder);
+        var folder = await new SubspaceFolder(_FolderResolver, _SubspaceTransmissionFactory).FolderPathAsync(subspaceFolder);
         Assert.IsTrue(Directory.Exists(folder));
     }
 }

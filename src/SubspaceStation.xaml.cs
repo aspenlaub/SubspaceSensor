@@ -11,19 +11,19 @@ using Autofac;
 namespace Aspenlaub.Net.GitHub.CSharp.SubspaceSensor;
 
 public partial class SubspaceStation {
-    private SubspaceFolders Folder;
-    private string MessageId;
+    private SubspaceFolders _Folder;
+    private string _MessageId;
 
-    private readonly IFolderResolver FolderResolver;
-    private readonly SubspaceTransmissionFactory SubspaceTransmissionFactory;
+    private readonly IFolderResolver _FolderResolver;
+    private readonly SubspaceTransmissionFactory _SubspaceTransmissionFactory;
 
     public SubspaceStation() {
         InitializeComponent();
-        Folder = SubspaceFolders.None;
-        MessageId = "";
-        var container = new ContainerBuilder().UsePegh("SubspaceSensor", new DummyCsArgumentPrompter()).Build();
-        FolderResolver = container.Resolve<IFolderResolver>();
-        SubspaceTransmissionFactory = new SubspaceTransmissionFactory(FolderResolver);
+        _Folder = SubspaceFolders.None;
+        _MessageId = "";
+        IContainer container = new ContainerBuilder().UsePegh("SubspaceSensor").Build();
+        _FolderResolver = container.Resolve<IFolderResolver>();
+        _SubspaceTransmissionFactory = new SubspaceTransmissionFactory(_FolderResolver);
     }
 
     public SubspaceFolderBrowser FolderBrowser(SubspaceFolders folder) {
@@ -31,12 +31,13 @@ public partial class SubspaceStation {
             case SubspaceFolders.Port : return PortBrowser;
             case SubspaceFolders.Error : return ErrorBrowser;
             case SubspaceFolders.Inbox : return InboxBrowser;
+            case SubspaceFolders.None:
             default : throw new Exception("Asked for a folder browser that is not supported");
         }
     }
 
     private int UrlLength(string s) {
-        s = s + ' ';
+        s += ' ';
         const string delimiters = " );,\n";
         return s.IndexOfAny(delimiters.ToCharArray());
     }
@@ -45,13 +46,13 @@ public partial class SubspaceStation {
         var paragraph = new Paragraph();
 
         while (s.Length != 0) {
-            var pos = s.IndexOf("http://", StringComparison.InvariantCulture);
+            int pos = s.IndexOf("http://", StringComparison.InvariantCulture);
             if (pos >= 0) {
                 if (pos > 0) {
                     paragraph.Inlines.Add(s.Substring(0, pos));
                     s = s.Substring(pos, s.Length - pos);
                 }
-                var length = UrlLength(s);
+                int length = UrlLength(s);
                 if (length <= 0) {
                     throw new Exception("Url length could not be detected: " + s);
                 }
@@ -74,9 +75,9 @@ public partial class SubspaceStation {
         var document = new FlowDocument();
 
         s = s.Replace("\r", "");
-        s = s + "\n\n";
+        s += "\n\n";
         while (s.Length != 0) {
-            var pos = s.IndexOf("\n\n", StringComparison.InvariantCulture);
+            int pos = s.IndexOf("\n\n", StringComparison.InvariantCulture);
             document.Blocks.Add(Message2Paragraph(s.Substring(0, pos)));
             s = s.Substring(pos + 2, s.Length - pos - 2);
             while (s.Length != 0 && s[0] == '\n') {
@@ -106,9 +107,9 @@ public partial class SubspaceStation {
         }
         ButtonDelete.IsEnabled = transmission.Valid && transmission.Folder != SubspaceFolders.Port;
         ButtonDeleteAll.IsEnabled = transmission.Valid && transmission.Folder == SubspaceFolders.Inbox;
-        Folder = transmission.Folder;
-        MessageId = transmission.MessageId;
-        FolderBrowser(Folder).SelectTransmission(transmission);
+        _Folder = transmission.Folder;
+        _MessageId = transmission.MessageId;
+        FolderBrowser(_Folder).SelectTransmission(transmission);
     }
 
     private void OnNavigationRequest(object sender, RequestNavigateEventArgs e) {
@@ -116,19 +117,19 @@ public partial class SubspaceStation {
     }
 
     private void OnDeleteClick(object sender, RoutedEventArgs e) {
-        var applicationCommand = new SubspaceAppCmd(FolderResolver, SubspaceTransmissionFactory) { CmdType = SubspaceAppCmdType.Delete, Folder = Folder, MessageId = MessageId };
+        var applicationCommand = new SubspaceAppCmd(_FolderResolver, _SubspaceTransmissionFactory) { CmdType = SubspaceAppCmdType.Delete, Folder = _Folder, MessageId = _MessageId };
         ((SubspaceStationApp)Application.Current).AddCommand(applicationCommand);
     }
 
     private void OnDeleteAllClick(object sender, RoutedEventArgs e) {
-        var applicationCommand = new SubspaceAppCmd(FolderResolver, SubspaceTransmissionFactory) { CmdType = SubspaceAppCmdType.DeleteAll };
+        var applicationCommand = new SubspaceAppCmd(_FolderResolver, _SubspaceTransmissionFactory) { CmdType = SubspaceAppCmdType.DeleteAll };
         ((SubspaceStationApp)Application.Current).AddCommand(applicationCommand);
     }
 
     private void OnUpdatePortClick(object sender, RoutedEventArgs e) {
-        var applicationCommand = new SubspaceAppCmd(FolderResolver, SubspaceTransmissionFactory) { CmdType = SubspaceAppCmdType.Initialise };
+        var applicationCommand = new SubspaceAppCmd(_FolderResolver, _SubspaceTransmissionFactory) { CmdType = SubspaceAppCmdType.Initialise };
         ((SubspaceStationApp)Application.Current).AddCommand(applicationCommand);
-        applicationCommand = new SubspaceAppCmd(FolderResolver, SubspaceTransmissionFactory) { CmdType = SubspaceAppCmdType.Scan };
+        applicationCommand = new SubspaceAppCmd(_FolderResolver, _SubspaceTransmissionFactory) { CmdType = SubspaceAppCmdType.Scan };
         ((SubspaceStationApp)Application.Current).AddCommand(applicationCommand);
     }
 }

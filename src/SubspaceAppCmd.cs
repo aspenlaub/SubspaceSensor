@@ -19,12 +19,12 @@ public enum SubspaceAppCmdType {
     MessageSelected     // Message (vMessageId) in folder (vFolder) has been selected
 }
 
-public class SubspaceAppCmd {
-    private SubspaceAppCmdType vCmdType;
+public class SubspaceAppCmd(IFolderResolver folderResolver, SubspaceTransmissionFactory subspaceTransmissionFactory) {
+    private SubspaceAppCmdType vCmdType = SubspaceAppCmdType.None;
     public SubspaceAppCmdType CmdType {
-        get => vCmdType;
+        get { return vCmdType; }
         set {
-            var cmdType = value;
+            SubspaceAppCmdType cmdType = value;
 
             if (vCmdType == cmdType) {
                 return;
@@ -52,17 +52,25 @@ public class SubspaceAppCmd {
                 } break;
                 case SubspaceAppCmdType.Initialise : {
                 } break;
+                case SubspaceAppCmdType.None:
+                    break;
+                case SubspaceAppCmdType.Delete:
+                    break;
+                case SubspaceAppCmdType.MessageSelected:
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
             }
 
             vCmdType = cmdType;
         }
     }
 
-    private SubspaceFolders vFolder;
+    private SubspaceFolders vFolder = SubspaceFolders.None;
     public SubspaceFolders Folder {
-        get => vFolder;
+        get { return vFolder; }
         set {
-            var folder = value;
+            SubspaceFolders folder = value;
 
             if (vFolder == folder) {
                 return;
@@ -79,11 +87,11 @@ public class SubspaceAppCmd {
         }
     }
 
-    private string vMessageId;
+    private string vMessageId = "";
     public string MessageId {
-        get => vMessageId;
+        get { return vMessageId; }
         set {
-            var messageId = value;
+            string messageId = value;
 
             if (vMessageId == messageId) {
                 return;
@@ -103,48 +111,36 @@ public class SubspaceAppCmd {
         }
     }
 
-    public SubspaceFolders ToFolder { get; private set; }
-
-    private readonly IFolderResolver FolderResolver;
-    private readonly SubspaceTransmissionFactory SubspaceTransmissionFactory;
-
-    public SubspaceAppCmd(IFolderResolver folderResolver, SubspaceTransmissionFactory subspaceTransmissionFactory) {
-        vCmdType = SubspaceAppCmdType.None;
-        vFolder = SubspaceFolders.None;
-        ToFolder = SubspaceFolders.None;
-        vMessageId = "";
-        FolderResolver = folderResolver;
-        SubspaceTransmissionFactory = subspaceTransmissionFactory;
-    }
+    public SubspaceFolders ToFolder { get; private set; } = SubspaceFolders.None;
 
     private async Task InitialiseAsync(SubspaceStation station) {
-        foreach (var folder in Enum.GetValues(typeof(SubspaceFolders)).Cast<SubspaceFolders>().Where(folder => folder != SubspaceFolders.None)) {
-            var folderBrowser = station.FolderBrowser(folder);
-            await folderBrowser.InitialiseAsync(await new SubspaceFolder(FolderResolver, SubspaceTransmissionFactory).ScanFolderAsync(folder));
+        foreach (SubspaceFolders folder in Enum.GetValues(typeof(SubspaceFolders)).Cast<SubspaceFolders>().Where(folder => folder != SubspaceFolders.None)) {
+            SubspaceFolderBrowser folderBrowser = station.FolderBrowser(folder);
+            await folderBrowser.InitialiseAsync(await new SubspaceFolder(folderResolver, subspaceTransmissionFactory).ScanFolderAsync(folder));
         }
     }
 
     private async Task ScanAsync(SubspaceStation station, List<SubspaceAppCmd> followCommands) {
-        var folderBrowser = station.FolderBrowser(vFolder);
+        SubspaceFolderBrowser folderBrowser = station.FolderBrowser(vFolder);
         if (folderBrowser.IsEmpty) {
-            await folderBrowser.InitialiseAsync(await new SubspaceFolder(FolderResolver, SubspaceTransmissionFactory).ScanFolderAsync(vFolder));
+            await folderBrowser.InitialiseAsync(await new SubspaceFolder(folderResolver, subspaceTransmissionFactory).ScanFolderAsync(vFolder));
         }
         if (folderBrowser.IsEmpty) {
             return;
         }
 
-        var transmission = await folderBrowser.PopAsync(followCommands);
+        SubspaceTransmission transmission = await folderBrowser.PopAsync(followCommands);
         if (transmission.IsPseudo) {
             return;
         }
 
-        var newFolder = transmission.Valid ? SubspaceFolders.Inbox : SubspaceFolders.Error;
-        File.Move(await transmission.FullFileNameAsync(), await new SubspaceFolder(FolderResolver, SubspaceTransmissionFactory).FolderPathAsync(newFolder) + transmission.FileName);
-        followCommands.Add(new SubspaceAppCmd(FolderResolver, SubspaceTransmissionFactory) { CmdType = SubspaceAppCmdType.Scanned, MessageId = transmission.MessageId });
+        SubspaceFolders newFolder = transmission.Valid ? SubspaceFolders.Inbox : SubspaceFolders.Error;
+        File.Move(await transmission.FullFileNameAsync(), await new SubspaceFolder(folderResolver, subspaceTransmissionFactory).FolderPathAsync(newFolder) + transmission.FileName);
+        followCommands.Add(new SubspaceAppCmd(folderResolver, subspaceTransmissionFactory) { CmdType = SubspaceAppCmdType.Scanned, MessageId = transmission.MessageId });
         followCommands.Add(transmission.Valid
-            ? new SubspaceAppCmd(FolderResolver, SubspaceTransmissionFactory) { CmdType = SubspaceAppCmdType.Received, MessageId = transmission.MessageId}
-            : new SubspaceAppCmd(FolderResolver, SubspaceTransmissionFactory) { CmdType = SubspaceAppCmdType.ReceivedError, MessageId = transmission.MessageId});
-        followCommands.Add(new SubspaceAppCmd(FolderResolver, SubspaceTransmissionFactory) { CmdType = SubspaceAppCmdType.Scan });
+            ? new SubspaceAppCmd(folderResolver, subspaceTransmissionFactory) { CmdType = SubspaceAppCmdType.Received, MessageId = transmission.MessageId}
+            : new SubspaceAppCmd(folderResolver, subspaceTransmissionFactory) { CmdType = SubspaceAppCmdType.ReceivedError, MessageId = transmission.MessageId});
+        followCommands.Add(new SubspaceAppCmd(folderResolver, subspaceTransmissionFactory) { CmdType = SubspaceAppCmdType.Scan });
     }
 
     private async Task ScannedAsync(SubspaceStation station, List<SubspaceAppCmd> followCommands) {
@@ -160,12 +156,12 @@ public class SubspaceAppCmd {
     }
 
     private async Task DeleteAsync(SubspaceStation station, List<SubspaceAppCmd> followCommands) {
-        var folderBrowser = station.FolderBrowser(vFolder);
+        SubspaceFolderBrowser folderBrowser = station.FolderBrowser(vFolder);
         if (folderBrowser.IsEmpty) {
             return;
         }
 
-        var transmission = await SubspaceTransmissionFactory.CreateAsync(vFolder, vMessageId);
+        SubspaceTransmission transmission = await subspaceTransmissionFactory.CreateAsync(vFolder, vMessageId);
         if (transmission.IsPseudo) {
             return;
         }
@@ -175,9 +171,9 @@ public class SubspaceAppCmd {
     }
 
     private async Task DeleteAllAsync(SubspaceStation station, List<SubspaceAppCmd> followCommands) {
-        var folderBrowser = station.FolderBrowser(vFolder);
+        SubspaceFolderBrowser folderBrowser = station.FolderBrowser(vFolder);
         do {
-            var transmission = await folderBrowser.PopAsync(followCommands);
+            SubspaceTransmission transmission = await folderBrowser.PopAsync(followCommands);
             // ReSharper disable once UseNullPropagationWhenPossible
             if (transmission == null) { return; }
             if (!transmission.Valid) { return; }
@@ -188,7 +184,7 @@ public class SubspaceAppCmd {
     }
 
     private async Task MessageSelectedAsync(SubspaceStation station) {
-        var transmission = await SubspaceTransmissionFactory.CreateAsync(vFolder, vMessageId);
+        SubspaceTransmission transmission = await subspaceTransmissionFactory.CreateAsync(vFolder, vMessageId);
         station.SetTransmission(transmission);
     }
 
@@ -223,6 +219,8 @@ public class SubspaceAppCmd {
             case SubspaceAppCmdType.MessageSelected : {
                 await MessageSelectedAsync(station);
             } break;
+            default:
+                throw new NotImplementedException();
         }
     }
 }
