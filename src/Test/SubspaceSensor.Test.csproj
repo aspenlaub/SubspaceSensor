@@ -4,7 +4,7 @@
     <TargetFramework>net10.0-windows</TargetFramework>
     <RestoreEnablePackagePruning>false</RestoreEnablePackagePruning>
     <AssetTargetFallback>net10.0</AssetTargetFallback>
-<IsPackable>false</IsPackable>
+    <IsPackable>false</IsPackable>
     <AssemblyName>Aspenlaub.Net.GitHub.CSharp.SubspaceSensor.Test</AssemblyName>
     <RootNamespace>Aspenlaub.Net.GitHub.CSharp.SubspaceSensor.Test</RootNamespace>
     <GenerateBuildInfoConfigFile>false</GenerateBuildInfoConfigFile>
