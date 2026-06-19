@@ -21,7 +21,7 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
-    <PackageReference Include="Seoa" Version="2.0.2512.1119" />
+    <PackageReference Include="Seoa" Version="2.0.2522.888" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\SubspaceSensor.csproj" />
