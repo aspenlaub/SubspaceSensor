@@ -20,6 +20,8 @@ public enum SubspaceAppCmdType {
 }
 
 public class SubspaceAppCmd(IFolderResolver folderResolver, SubspaceTransmissionFactory subspaceTransmissionFactory) {
+    private readonly SubspaceFolderHelper _SubspaceFolderHelper = new SubspaceFolderHelper(folderResolver, subspaceTransmissionFactory);
+
     private SubspaceAppCmdType vCmdType = SubspaceAppCmdType.None;
     public SubspaceAppCmdType CmdType {
         get { return vCmdType; }
@@ -116,14 +118,14 @@ public class SubspaceAppCmd(IFolderResolver folderResolver, SubspaceTransmission
     private async Task InitialiseAsync(SubspaceStation station) {
         foreach (SubspaceFolders folder in Enum.GetValues(typeof(SubspaceFolders)).Cast<SubspaceFolders>().Where(folder => folder != SubspaceFolders.None)) {
             SubspaceFolderBrowser folderBrowser = station.FolderBrowser(folder);
-            await folderBrowser.InitialiseAsync(await new SubspaceFolder(folderResolver, subspaceTransmissionFactory).ScanFolderAsync(folder));
+            await folderBrowser.InitialiseAsync(await _SubspaceFolderHelper.ScanFolderAsync(folder));
         }
     }
 
     private async Task ScanAsync(SubspaceStation station, List<SubspaceAppCmd> followCommands) {
         SubspaceFolderBrowser folderBrowser = station.FolderBrowser(vFolder);
         if (folderBrowser.IsEmpty) {
-            await folderBrowser.InitialiseAsync(await new SubspaceFolder(folderResolver, subspaceTransmissionFactory).ScanFolderAsync(vFolder));
+            await folderBrowser.InitialiseAsync(await _SubspaceFolderHelper.ScanFolderAsync(vFolder));
         }
         if (folderBrowser.IsEmpty) {
             return;
@@ -135,7 +137,16 @@ public class SubspaceAppCmd(IFolderResolver folderResolver, SubspaceTransmission
         }
 
         SubspaceFolders newFolder = transmission.Valid ? SubspaceFolders.Inbox : SubspaceFolders.Error;
-        File.Move(await transmission.FullFileNameAsync(), await new SubspaceFolder(folderResolver, subspaceTransmissionFactory).FolderPathAsync(newFolder) + transmission.FileName);
+        string sourceFileName = await transmission.FullFileNameAsync();
+        if (!File.Exists(sourceFileName)) {
+            return;
+        }
+        string destFileName = await _SubspaceFolderHelper.FolderPathAsync(newFolder) + transmission.FileName;
+        try {
+            File.Move(sourceFileName, destFileName);
+        } catch (Exception) {
+            return;
+        }
         followCommands.Add(new SubspaceAppCmd(folderResolver, subspaceTransmissionFactory) { CmdType = SubspaceAppCmdType.Scanned, MessageId = transmission.MessageId });
         followCommands.Add(transmission.Valid
             ? new SubspaceAppCmd(folderResolver, subspaceTransmissionFactory) { CmdType = SubspaceAppCmdType.Received, MessageId = transmission.MessageId}

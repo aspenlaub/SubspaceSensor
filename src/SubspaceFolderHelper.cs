@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
-using Aspenlaub.Net.GitHub.CSharp.Pegh.Entities;
 using Aspenlaub.Net.GitHub.CSharp.Pegh.Extensions;
 using Aspenlaub.Net.GitHub.CSharp.Pegh.Interfaces;
 using Aspenlaub.Net.GitHub.CSharp.Skladasu.Entities;
@@ -14,7 +13,7 @@ public enum SubspaceFolders {
     None, Port, Error, Inbox,
 }
 
-public class SubspaceFolder(IFolderResolver folderResolver, SubspaceTransmissionFactory subspaceTransmissionFactory) {
+public class SubspaceFolderHelper(IFolderResolver folderResolver, SubspaceTransmissionFactory subspaceTransmissionFactory) {
     public async Task<IFolder> ConfiguredSubspaceFolderAsync() {
         var errorsAndInfos = new ErrorsAndInfos();
         IFolder subspaceFolder = await folderResolver.ResolveAsync(@"$(MainUserFolder)\Documents\Subspace", errorsAndInfos);

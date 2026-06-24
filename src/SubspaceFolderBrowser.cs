@@ -41,7 +41,7 @@ public class SubspaceFolderBrowser : Expander {
 
         _SubspaceTransmissionFactory = new SubspaceTransmissionFactory(_FolderResolver);
 
-        _Transmissions = new List<SubspaceTransmission>();
+        _Transmissions = [];
 
         _ListBox = new ListBox {
             SelectionMode = SelectionMode.Single,
@@ -145,7 +145,9 @@ public class SubspaceFolderBrowser : Expander {
             return;
         }
 
-        var cmd = new SubspaceAppCmd(_FolderResolver, _SubspaceTransmissionFactory) { CmdType = SubspaceAppCmdType.MessageSelected, Folder = selected.Folder, MessageId = selected.MessageId };
+        var cmd = new SubspaceAppCmd(_FolderResolver, _SubspaceTransmissionFactory) {
+            CmdType = SubspaceAppCmdType.MessageSelected, Folder = selected.Folder, MessageId = selected.MessageId
+        };
         ((SubspaceStationApp)Application.Current).AddCommand(cmd);
     }
 

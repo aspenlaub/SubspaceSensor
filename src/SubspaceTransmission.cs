@@ -46,14 +46,12 @@ public class SubspaceTransmission : IComparable {
         }
     }
 
-    private readonly IFolderResolver _FolderResolver;
-    private readonly SubspaceTransmissionFactory _SubspaceTransmissionFactory;
+    private readonly SubspaceFolderHelper _SubspaceFolderHelper;
 
     public SubspaceTransmission(IFolderResolver folderResolver, SubspaceTransmissionFactory subspaceTransmissionFactory) {
         MessageId = "";
         Folder = SubspaceFolders.None;
-        _FolderResolver = folderResolver;
-        _SubspaceTransmissionFactory = subspaceTransmissionFactory;
+        _SubspaceFolderHelper = new SubspaceFolderHelper(folderResolver, subspaceTransmissionFactory);
         Invalidate();
     }
 
@@ -75,7 +73,7 @@ public class SubspaceTransmission : IComparable {
     public string FileName => "subspacemsg" + MessageId + ".xml";
 
     public async Task<string> FullFileNameAsync() {
-        return await new SubspaceFolder(_FolderResolver, _SubspaceTransmissionFactory).FolderPathAsync(Folder) + FileName;
+        return await _SubspaceFolderHelper.FolderPathAsync(Folder) + FileName;
     }
 
     private async Task TryReadingAsync() {
@@ -113,6 +111,7 @@ public class SubspaceTransmission : IComparable {
                         Header = textReader.GetAttribute("header") ?? throw new Exception("header");
                         break;
                     }
+                    case XmlNodeType.Element when textReader.AttributeCount < 8:
                     case XmlNodeType.Text when Text.Length > 0:
                         continue;
                     case XmlNodeType.Text:
