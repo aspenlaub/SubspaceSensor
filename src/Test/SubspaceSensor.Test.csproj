@@ -13,6 +13,7 @@
     <AssemblyTitle>Aspenlaub.Net.GitHub.CSharp.SubspaceSensor.Test</AssemblyTitle>
     <AssemblyProduct>Aspenlaub.Net.GitHub.CSharp.SubspaceSensor.Test</AssemblyProduct>
     <OutputType>Library</OutputType>
+    <MSBuildEnableWorkloadResolver>false</MSBuildEnableWorkloadResolver>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />

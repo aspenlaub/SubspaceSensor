@@ -22,6 +22,7 @@
     <RepositoryBranch>master</RepositoryBranch>
     <PackageId>SubspaceSensor</PackageId>
     <ApplicationIcon>subspace.ico</ApplicationIcon>
+    <MSBuildEnableWorkloadResolver>false</MSBuildEnableWorkloadResolver>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
