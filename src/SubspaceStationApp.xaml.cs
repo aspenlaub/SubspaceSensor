@@ -1,10 +1,11 @@
 using System;
+using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Input;
-using System.Collections.Generic;
 using System.Windows.Threading;
 using Aspenlaub.Net.GitHub.CSharp.Pegh.Components;
 using Aspenlaub.Net.GitHub.CSharp.Pegh.Interfaces;
+using Aspenlaub.Net.GitHub.CSharp.Skladasu.Entities;
 using Autofac;
 
 namespace Aspenlaub.Net.GitHub.CSharp.SubspaceSensor;
@@ -19,8 +20,9 @@ public partial class SubspaceStationApp {
     public SubspaceStationApp() {
         IContainer container = new ContainerBuilder().UsePegh("SubspaceSensor").Build();
         _FolderResolver = container.Resolve<IFolderResolver>();
+        var errorsAndInfos = new ErrorsAndInfos();
+        _FolderResolver.ResolveAsync(@"$(MainUserFolder)\Documents\Subspace", errorsAndInfos).Wait();
         _SubspaceTransmissionFactory = new SubspaceTransmissionFactory(_FolderResolver);
-
     }
 
     protected override void OnStartup(StartupEventArgs e) {
