@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Threading;
@@ -20,9 +21,13 @@ public partial class SubspaceStationApp {
     public SubspaceStationApp() {
         IContainer container = new ContainerBuilder().UsePegh("SubspaceSensor").Build();
         _FolderResolver = container.Resolve<IFolderResolver>();
-        var errorsAndInfos = new ErrorsAndInfos();
-        _FolderResolver.ResolveAsync(@"$(MainUserFolder)\Documents\Subspace", errorsAndInfos).Wait();
+        InitializeAsync().GetAwaiter().GetResult();
         _SubspaceTransmissionFactory = new SubspaceTransmissionFactory(_FolderResolver);
+    }
+
+    private async Task InitializeAsync() {
+        var errorsAndInfos = new ErrorsAndInfos();
+        await _FolderResolver.ResolveAsync(@"$(MainUserFolder)\Documents\Subspace", errorsAndInfos);
     }
 
     protected override void OnStartup(StartupEventArgs e) {
