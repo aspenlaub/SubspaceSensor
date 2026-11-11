@@ -1,9 +1,9 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net10.0-windows</TargetFramework>
+    <TargetFramework>net11.0-windows</TargetFramework>
     <RestoreEnablePackagePruning>false</RestoreEnablePackagePruning>
-    <AssetTargetFallback>net10.0</AssetTargetFallback>
+    <AssetTargetFallback>net11.0</AssetTargetFallback>
     <IsPackable>false</IsPackable>
     <AssemblyName>Aspenlaub.Net.GitHub.CSharp.SubspaceSensor.Test</AssemblyName>
     <RootNamespace>Aspenlaub.Net.GitHub.CSharp.SubspaceSensor.Test</RootNamespace>
